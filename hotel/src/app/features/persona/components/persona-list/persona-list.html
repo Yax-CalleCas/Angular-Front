@@ -1,0 +1,238 @@
+<div class="page-head">
+  <div>
+    <div class="page-eyebrow">Gestión</div>
+    <h1 class="page-title display">Personas</h1>
+    <p class="page-sub">Administra usuarios, empleados y clientes del sistema con control multi-sede.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn-sy btn-sy-secondary btn-sy-lg" (click)="cargarPersonas()" [disabled]="isProcessing()">
+      <i class="bi bi-arrow-clockwise"></i> Refrescar
+    </button>
+    <button class="btn-sy btn-sy-primary btn-sy-lg glow"
+            data-bs-toggle="modal" data-bs-target="#modalPersona"
+            (click)="limpiarFormulario()">
+      <i class="bi bi-plus-lg"></i> Nueva persona
+    </button>
+  </div>
+</div>
+
+<section class="card-sy elevated">
+  <div class="table-wrap">
+    <table class="table-sy premium">
+      <thead>
+        <tr>
+          <th>Persona</th>
+          <th>Documento</th>
+          <th>Rol</th>
+          <th class="center">Estado</th>
+          <th class="center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of paginatedPersonas(); trackBy: trackByPersona">
+          <td>
+            <div class="person">
+              <img class="avatar-lg" [src]="p.fotoUrl || 'assets/default-avatar.png'"
+                   alt="Foto de {{ p.nombre }}" (error)="onImgError($event)">
+              <div>
+                <div class="cell-main">{{ p.nombre }} {{ p.apellido }}</div>
+                <div class="cell-sub">{{ p.correo }}</div>
+              </div>
+            </div>
+          </td>
+
+          <td>
+            <div class="cell-main mono">{{ p.documento }}</div>
+            <div class="cell-sub">{{ p.tipoDocumento }}</div>
+          </td>
+
+          <td>
+            <span class="badge-pill"
+                  [ngClass]="{
+                    'badge-marca': p.idTipoPersona === 1,
+                    'badge-proceso': p.idTipoPersona === 2,
+                    'badge-ok': p.idTipoPersona === 3
+                  }">
+              <span class="dot"></span> {{ getRolInfo(p.idTipoPersona).nombre }}
+            </span>
+          </td>
+
+          <td class="center">
+            <button type="button" class="badge-pill"
+                    [ngClass]="p.estado ? 'badge-ok' : 'badge-archivado'"
+                    (click)="cambiarEstado(p)"
+                    [title]="p.estado ? 'Clic para desactivar' : 'Clic para activar'">
+              <span class="dot"></span> {{ p.estado ? 'Activo' : 'Inactivo' }}
+            </button>
+          </td>
+
+          <td class="center">
+            <div class="row-actions">
+              <!-- Botón Editar -->
+              <button class="icon-btn" (click)="editar(p)" title="Editar" aria-label="Editar cliente"
+                      data-bs-toggle="modal" data-bs-target="#modalPersona">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+
+              <!-- Botón Bloquear / Desbloquear dinámico -->
+              <button class="icon-btn"
+                      [ngClass]="p.estado ? 'warning' : 'success'"
+                      (click)="cambiarEstado(p)"
+                      [title]="p.estado ? 'Bloquear' : 'Desbloquear'"
+                      [aria-label]="p.estado ? 'Bloquear cliente' : 'Desbloquear cliente'">
+                <i class="bi" [ngClass]="p.estado ? 'bi-slash-circle' : 'bi-check-circle'"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+
+        <tr *ngIf="paginatedPersonas().length === 0">
+          <td colspan="5">
+            <div class="empty-state">
+              <i class="bi bi-people"></i>
+              <strong>Aún no hay personas registradas</strong>
+              Usa el botón "Nueva persona" para agregar la primera.
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager" *ngIf="totalPaginas() > 1">
+    <span>Página {{ currentPage() }} de {{ totalPaginas() }}</span>
+    <div class="pager-btns">
+      <button class="pager-btn" [disabled]="currentPage() === 1"
+              (click)="cambiarPagina(currentPage() - 1)" aria-label="Anterior">&laquo;</button>
+      <button class="pager-btn" *ngFor="let item of [].constructor(totalPaginas()); let i = index"
+              [class.active]="currentPage() === (i + 1)" (click)="cambiarPagina(i + 1)">{{ i + 1 }}</button>
+      <button class="pager-btn" [disabled]="currentPage() === totalPaginas()"
+              (click)="cambiarPagina(currentPage() + 1)" aria-label="Siguiente">&raquo;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FORMULARIO FLOTANTE ============ -->
+<div class="modal fade modal-sy" id="modalPersona" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-sy-head">
+        <div>
+          <div class="eyebrow">{{ personaSeleccionada().idPersona ? 'Edición' : 'Nuevo registro' }}</div>
+          <h5>{{ personaSeleccionada().idPersona ? 'Editar persona' : 'Registrar persona' }}</h5>
+        </div>
+        <button type="button" class="modal-sy-close" data-bs-dismiss="modal" aria-label="Cerrar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="modal-sy-body">
+        <form #f="ngForm" (ngSubmit)="f.valid && guardar()" novalidate>
+
+          <div class="form-section">Identificación</div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-5">
+              <label class="label-sy">Tipo de documento</label>
+              <select class="input-sy" name="tipo" required
+                      [ngModel]="personaSeleccionada().tipoDocumento"
+                      (ngModelChange)="personaSeleccionada.update(p => ({...p, tipoDocumento: $event}))">
+                <option value="" disabled>Seleccione...</option>
+                <option value="DNI">DNI</option>
+                <option value="CARNE EXTRANJERIA">CARNE EXTRANJERIA</option>
+                <option value="RUC">RUC</option>
+              </select>
+            </div>
+            <div class="col-md-7">
+              <label class="label-sy">Número de documento</label>
+              <input class="input-sy mono" name="doc" required
+                     [ngModel]="personaSeleccionada().documento"
+                     (ngModelChange)="personaSeleccionada.update(p => ({...p, documento: $event}))">
+            </div>
+            <div class="col-md-6">
+              <label class="label-sy">Nombre</label>
+              <input class="input-sy" name="nombre" required
+                     [ngModel]="personaSeleccionada().nombre"
+                     (ngModelChange)="personaSeleccionada.update(p => ({...p, nombre: $event}))">
+            </div>
+            <div class="col-md-6">
+              <label class="label-sy">Apellido</label>
+              <input class="input-sy" name="apellido" required
+                     [ngModel]="personaSeleccionada().apellido"
+                     (ngModelChange)="personaSeleccionada.update(p => ({...p, apellido: $event}))">
+            </div>
+          </div>
+
+          <div class="form-section">Contacto</div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="label-sy">Correo electrónico</label>
+              <input type="email" class="input-sy" name="correo" required
+                     [ngModel]="personaSeleccionada().correo"
+                     (ngModelChange)="personaSeleccionada.update(p => ({...p, correo: $event}))">
+            </div>
+            <div class="col-md-6">
+              <label class="label-sy">URL de foto</label>
+              <input class="input-sy" name="foto" placeholder="https://..."
+                     [ngModel]="personaSeleccionada().fotoUrl"
+                     (ngModelChange)="personaSeleccionada.update(p => ({...p, fotoUrl: $event}))">
+            </div>
+          </div>
+
+          <!-- SECCIÓN: Asignación de Sedes Operativas -->
+          <div class="form-section">Asignación de Sedes</div>
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <label class="label-sy mb-2">Seleccione las sedes a las que tendrá acceso:</label>
+              <div class="d-flex flex-wrap gap-3 p-3 rounded border bg-light">
+                <div class="form-check" *ngFor="let sede of sedesDisponibles()">
+                  <input class="form-check-input" type="checkbox"
+                         [id]="'modal_sede_' + sede.idSede"
+                         [checked]="isSedeSeleccionada(sede.idSede)"
+                         (change)="onSedeChange(sede, $event)">
+                  <label class="form-check-label fw-medium text-dark" [for]="'modal_sede_' + sede.idSede">
+                    {{ sede.nombre }} <span class="text-muted small">({{ sede.codigo }})</span>
+                  </label>
+                </div>
+                <div *ngIf="sedesDisponibles().length === 0" class="text-muted small">
+                  Cargando sedes disponibles...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">Acceso al sistema y Operación</div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="label-sy">Rol del sistema</label>
+              <select class="input-sy" name="idTipo" required
+                      [ngModel]="personaSeleccionada().idTipoPersona"
+                      (ngModelChange)="personaSeleccionada.update(p => ({...p, idTipoPersona: $event}))">
+                <option [ngValue]="0" disabled>Seleccionar rol</option>
+                <option *ngFor="let rol of roles" [ngValue]="rol.id">{{ rol.nombre }}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="label-sy">Contraseña</label>
+              <input type="password" class="input-sy" name="clave"
+                     [placeholder]="personaSeleccionada().idPersona ? 'Dejar en blanco para mantener' : '**********'"
+                     [ngModel]="personaSeleccionada().clave"
+                     (ngModelChange)="personaSeleccionada.update(p => ({...p, clave: $event}))"
+                     [required]="!personaSeleccionada().idPersona">
+              <div class="hint" *ngIf="personaSeleccionada().idPersona">
+                Si no la modificas, se conserva la contraseña actual.
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-sy-foot">
+            <button type="button" class="btn-sy btn-sy-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn-sy btn-sy-primary" [disabled]="!f.valid || isProcessing()">
+              {{ isProcessing() ? 'Procesando...' : (personaSeleccionada().idPersona ? 'Actualizar cambios' : 'Registrar persona') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

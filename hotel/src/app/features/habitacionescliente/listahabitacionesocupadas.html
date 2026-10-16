@@ -1,0 +1,69 @@
+<div class="container-fluid p-4">
+  <!-- Cabecera -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-primary fw-bold">Gestión de Habitaciones</h2>
+      <p class="text-muted">Visualización de habitaciones filtradas por estado.</p>
+    </div>
+
+    <!-- Filtro de Pisos -->
+    <div class="w-25">
+      <label class="form-label fw-semibold">Filtrar por Piso:</label>
+      <select
+  class="form-select shadow-sm"
+  (change)="onPisoChange($event)">
+  <option value="0">Todos los pisos</option>
+  <!-- Asegúrate que 'p.numeroPiso' sea el nombre real de la propiedad en tu interfaz -->
+  <option *ngFor="let p of pisos()" [value]="p.idPiso">
+    {{ p.descripcion }}
+  </option>
+</select>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading()" class="d-flex justify-content-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- Contenido -->
+  <div class="row" *ngIf="!isLoading()">
+    <div
+      class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4"
+      *ngFor="let h of habitacionesFiltradas(); trackBy: trackByHabitacion">
+
+      <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="card-title fw-bold text-dark">Hab. {{ h.numero }}</h5>
+            <span class="badge bg-info text-dark">{{ h.categoriaNombre }}</span>
+          </div>
+
+          <p class="text-muted small mb-1">{{ h.detalle || 'Sin detalles' }}</p>
+          <h6 class="text-primary fw-bold mb-3">S/ {{ h.precio | number:'1.2-2' }}</h6>
+
+          <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-warning text-dark px-3 py-2">
+              <i class="bi bi-door-open"></i> {{ h.estadoDescripcion }}
+            </span>
+          </div>
+
+          <button
+            class="btn btn-outline-primary w-100 fw-semibold"
+            (click)="irAVenta(h.idHabitacion)">
+            Gestionar Venta
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado vacío -->
+    <div class="col-12" *ngIf="habitacionesFiltradas().length === 0 && !isLoading()">
+      <div class="alert alert-warning text-center border-0 shadow-sm mt-4">
+        <i class="bi bi-info-circle"></i> No hay habitaciones disponibles bajo los criterios seleccionados.
+      </div>
+    </div>
+  </div>
+</div>

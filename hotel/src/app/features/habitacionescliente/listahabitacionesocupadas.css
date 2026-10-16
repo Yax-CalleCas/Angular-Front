@@ -1,0 +1,60 @@
+.room-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 20px !important;
+  background: #0a4fa4;
+  min-height: 260px;
+  min-width: 250px;
+  border: 1px solid rgba(0,0,0,0.05) !important;
+
+  &:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1) !important;
+  }
+
+
+  .card-body { padding: 1.5rem !important; }
+
+  .room-number {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #2d3436;
+  }
+
+  .room-icon-wrapper {
+    font-size: 3.5rem;
+    padding: 15px;
+    border-radius: 50%;
+    margin: 10px auto;
+    width: 90px;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eefdf3;
+    color: #27ae60;
+  }
+
+  &.occupied {
+    background: linear-gradient(135deg, #ffffff 0%, #fff5f5 100%);
+    border-left: 6px solid #ff7675 !important;
+
+    .room-icon-wrapper {
+      background: #fff1f0;
+      color: #ff7675;
+    }
+  }
+
+
+  .btn {
+    padding: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 12px;
+  }
+}
+
+.dashboard-header {
+  border-bottom: 3px solid #64CAD1;
+  background: linear-gradient(to right, #ffffff, #f8f9fa);
+}

@@ -1,0 +1,89 @@
+/* Estilo General del Contenedor */
+.container-fluid {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Card Moderno con Sombra */
+.card {
+  border: none;
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.shadow-sm {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Botones Profesionales */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+}
+
+/* Tabla Estilizada */
+.table {
+  margin-bottom: 0;
+}
+
+.table thead {
+  background-color: #1e293b !important;
+  color: white;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+/* Badges y Totales */
+.badge {
+  padding: 0.5em 0.8em;
+  font-size: 0.8rem;
+}
+
+.text-primary {
+  color: #4f46e5 !important;
+}
+
+/* Estilo para las alertas */
+.alert {
+  border-radius: 8px;
+  border: none;
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Animación Suave para el reporte */
+.report-table {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilo responsivo para inputs */
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  padding: 0.6rem;
+}
+
+.form-control:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}

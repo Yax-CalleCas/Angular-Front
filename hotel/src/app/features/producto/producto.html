@@ -1,0 +1,163 @@
+<main class="container py-4 font-ui">
+
+  <!-- ── Formulario de Registro / Edición ── -->
+  <section class="card border border-junta shadow-sm rounded-3 bg-sillar-blanco mb-4" *ngIf="mostrarFormulario">
+    <header class="card-header bg-sillar-piedra border-bottom border-junta py-3 px-4">
+      <h5 class="modal-title fw-bold font-display text-tinta fs-5 mb-0">
+        {{ isEdit ? 'Editar Producto' : 'Nuevo Producto' }}
+      </h5>
+    </header>
+
+    <div class="card-body p-4 text-xs">
+      <form [formGroup]="form" (ngSubmit)="guardar()">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="prodNombre" class="form-label fw-semibold text-tinta">Nombre del Producto <span class="text-cochinilla">*</span></label>
+            <input id="prodNombre" formControlName="nombre" aria-required="true" class="form-control text-xs border-junta shadow-none" placeholder="Ej. Zapatillas Running">
+          </div>
+          <div class="col-md-3">
+            <label for="prodPrecio" class="form-label fw-semibold text-tinta">Precio (S/) <span class="text-cochinilla">*</span></label>
+            <input id="prodPrecio" type="number" min="0" step="0.01" formControlName="precio" aria-required="true" class="form-control text-xs border-junta shadow-none" placeholder="0.00">
+          </div>
+          <div class="col-md-3">
+            <label for="prodStock" class="form-label fw-semibold text-tinta">Stock Disponible <span class="text-cochinilla">*</span></label>
+            <input id="prodStock" type="number" min="0" formControlName="cantidad" aria-required="true" class="form-control text-xs border-junta shadow-none" placeholder="0">
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <label for="prodDetalle" class="form-label fw-semibold text-tinta">Detalle</label>
+            <input id="prodDetalle" formControlName="detalle" class="form-control text-xs border-junta shadow-none" placeholder="Descripción breve">
+          </div>
+
+          <!-- ── Carga de Imagen Local ── -->
+          <div class="col-md-6">
+            <label for="prodFoto" class="form-label fw-semibold text-tinta">Fotografía del Producto</label>
+            <div class="d-flex align-items-center gap-3">
+              <div *ngIf="form.get('imagenUrl')?.value" class="position-relative border border-junta rounded overflow-hidden bg-white shadow-sm" style="width: 45px; height: 45px;">
+                <img [src]="form.get('imagenUrl')?.value" class="w-100 h-100 object-fit-cover" alt="Vista previa del producto">
+                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center" style="width: 18px; height: 18px; border-radius: 0 0 0 4px; background-color: #B3261E; border:none;" aria-label="Quitar imagen" (click)="removerImagen()">
+                  <i class="bi bi-x text-white" style="font-size: 10px;" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              <div class="flex-grow-1">
+                <input id="prodFoto" type="file" class="form-control text-xs border-junta shadow-none" accept="image/*" (change)="onArchivoSeleccionado($event)">
+              </div>
+            </div>
+            <div *ngIf="procesandoImagen" class="small text-primary mt-1" role="status">
+              <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Procesando imagen en segundo plano...
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 border-top border-junta mt-4 pt-3">
+          <button type="button" class="btn btn-secondary-sillar text-xs px-3 py-2" (click)="cancelar()" [disabled]="isSaving">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary-sillar text-xs px-4 py-2" [disabled]="form.invalid || isSaving">
+            <span *ngIf="isSaving; else iconoGuardar" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            <ng-template #iconoGuardar><i class="bi bi-save me-1" aria-hidden="true"></i></ng-template>
+            {{ isEdit ? 'Actualizar' : 'Guardar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ── Encabezado de la Tabla ── -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="h3 fw-bold text-tinta mb-1 font-display">Listado de Productos</h2>
+      <p class="text-garua text-xs mb-0">Administra el inventario y stock disponible.</p>
+    </div>
+    <button type="button" class="btn btn-primary-sillar d-flex align-items-center gap-2 shadow-sm px-4 py-2 text-xs" (click)="nuevo()" *ngIf="!mostrarFormulario">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i> Nuevo Producto
+    </button>
+  </div>
+
+  <!-- ── Sección de Datos y Tabla ── -->
+  <section class="position-relative">
+    <div *ngIf="isLoading" class="text-center py-5">
+      <div class="spinner-border text-cochinilla" role="status" style="width: 2rem; height: 2rem;">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="text-garua text-xs mt-2 mb-0">Sincronizando inventario...</p>
+    </div>
+
+    <div class="table-responsive rounded border border-junta bg-white shadow-sm" *ngIf="!isLoading && productos.length > 0">
+      <table class="table table-hover align-middle mb-0 text-xs">
+        <thead class="bg-sillar-piedra text-tinta border-bottom border-junta">
+          <tr>
+            <th scope="col" class="py-3 px-3" style="width: 70px;">Imagen</th>
+            <th scope="col" class="py-3 px-3">Nombre</th>
+            <th scope="col" class="py-3 px-3">Precio</th>
+            <th scope="col" class="py-3 px-3">Stock</th>
+            <th scope="col" class="py-3 px-3 text-end" style="width: 140px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-junta">
+          <tr *ngFor="let p of productosPaginados">
+            <td class="px-3 py-3">
+              <img *ngIf="p.imagenUrl; else sinImagen" [src]="p.imagenUrl" alt="" width="38" height="38" decoding="async" loading="lazy" style="object-fit: cover;" class="rounded-circle border border-junta">
+              <ng-template #sinImagen>
+                <span class="rounded-circle border border-junta bg-sillar-piedra text-garua d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                  <i class="bi bi-image" aria-hidden="true"></i>
+                </span>
+              </ng-template>
+            </td>
+            <td class="px-3 py-3 fw-semibold text-tinta">{{ p.nombre }}</td>
+            <td class="px-3 py-3 font-mono fw-semibold text-success tabular-nums">{{ p.precio | currency:'S/ ' }}</td>
+            <td class="px-3 py-3">
+              <span class="badge rounded-pill fw-medium py-1" [ngClass]="(p.cantidad ?? 0) > 0 ? 'bg-success-subtle text-success-emphasis' : 'bg-danger-subtle text-danger-emphasis'">
+                {{ p.cantidad }} uds
+              </span>
+            </td>
+            <td class="px-3 py-3 text-end">
+              <button type="button" class="btn btn-sm btn-secondary-sillar text-xs py-1 px-2 me-2" (click)="editar(p)" title="Editar" [attr.aria-label]="'Editar ' + p.nombre">
+                <i class="bi bi-pencil text-primary" aria-hidden="true"></i> Editar
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger text-xs py-1 px-2" (click)="eliminar(p.idProducto)" title="Eliminar" [attr.aria-label]="'Eliminar ' + p.nombre">
+                <i class="bi bi-trash" aria-hidden="true"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Paginación -->
+      <nav *ngIf="totalPaginas > 1" aria-label="Navegación de productos" class="d-flex justify-content-between align-items-center p-3 border-top border-junta text-xs text-garua">
+        <span>Página <strong class="text-tinta">{{ paginaActual }}</strong> de <strong class="text-tinta">{{ totalPaginas }}</strong></span>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" [class.disabled]="paginaActual === 1">
+            <button type="button" class="page-link border-junta text-tinta bg-white" [disabled]="paginaActual === 1" (click)="cambiarPagina(paginaActual - 1)">
+              Anterior
+            </button>
+          </li>
+
+          <li class="page-item" *ngFor="let pag of paginas" [class.active]="paginaActual === pag">
+            <button
+              type="button"
+              class="page-link border-junta"
+              [style.background-color]="paginaActual === pag ? '#8A1E33' : '#FFFFFF'"
+              [style.color]="paginaActual === pag ? '#FFFFFF' : '#26231F'"
+              [attr.aria-current]="paginaActual === pag ? 'page' : null"
+              (click)="cambiarPagina(pag)">{{ pag }}</button>
+          </li>
+
+          <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+            <button type="button" class="page-link border-junta text-tinta bg-white" [disabled]="paginaActual === totalPaginas" (click)="cambiarPagina(paginaActual + 1)">
+              Siguiente
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+
+    <div *ngIf="!isLoading && productos.length === 0" class="text-center py-5 text-garua">
+      <i class="bi bi-inbox fs-2 d-block mb-2 text-muted" aria-hidden="true"></i>
+      No hay productos registrados en el inventario.
+    </div>
+  </section>
+</main>

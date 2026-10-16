@@ -1,0 +1,65 @@
+<div class="layout d-flex min-vh-100">
+
+  <aside class="sidebar d-flex flex-column">
+    <div class="sidebar-brand d-flex align-items-center gap-2">
+      <div class="brand-mark">H</div>
+      <div>
+        <div class="brand-title">Panel Operativo</div>
+        <div class="brand-sub">Hotel · es-PE</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav nav flex-column flex-grow-1">
+
+      @if (hasRole('Administrador')) {
+        <div class="nav-section">Operación</div>
+        <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link"><i class="bi bi-speedometer2"></i> Admin</a>
+        <a routerLink="/admin/recepcion" routerLinkActive="active" class="nav-link"><i class="bi bi-clipboard-check"></i> G. Recepción</a>
+        <a routerLink="/admin/venta" routerLinkActive="active" class="nav-link"><i class="bi bi-house-lock"></i> Venta Productos</a>
+        <a routerLink="/admin/salidaHabitacion" routerLinkActive="active" class="nav-link"><i class="bi bi-box-arrow-left"></i> Recepción Salida</a>
+
+        <div class="nav-section">Catálogo</div>
+        <a routerLink="/admin/habitacion" routerLinkActive="active" class="nav-link"><i class="bi bi-door-open"></i> G. Habitaciones</a>
+
+        <a routerLink="/admin/categorias" routerLinkActive="active" class="nav-link"><i class="bi bi-tags"></i> G. Categorías</a>
+        <a routerLink="/admin/piso" routerLinkActive="active" class="nav-link"><i class="bi bi-layers"></i> G. Pisos</a>
+        <a routerLink="/admin/crudproductos" routerLinkActive="active" class="nav-link"><i class="bi bi-box-seam"></i> Productos</a>
+
+        <div class="nav-section">Gestión</div>
+        <a routerLink="/admin/personas" routerLinkActive="active" class="nav-link"><i class="bi bi-people"></i> Usuarios</a>
+        <a routerLink="/admin/clientes" routerLinkActive="active" class="nav-link"><i class="bi bi-person-vcard"></i> Clientes</a>
+        <a routerLink="/admin/reportes" routerLinkActive="active" class="nav-link"><i class="bi bi-file-earmark-bar-graph"></i> Reportes</a>
+      }
+
+      @if (hasRole('Empleado')) {
+        <div class="nav-section">Módulos</div>
+        <a routerLink="/empleado" routerLinkActive="active" class="nav-link"><i class="bi bi-speedometer2"></i> Dashboard Empleado</a>
+      }
+
+      @if (hasRole('Cliente')) {
+        <div class="nav-section">Mi cuenta</div>
+        <a routerLink="/cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link"><i class="bi bi-person-circle"></i> Mi Perfil</a>
+        <a routerLink="/cliente/catalogo" routerLinkActive="active" class="nav-link"><i class="bi bi-box-seam"></i> Mi Catálogo</a>
+        <a routerLink="/cliente/habitacioncliente" routerLinkActive="active" class="nav-link"><i class="bi bi-building"></i> Habitaciones</a>
+        <a routerLink="/cliente/habitacionesocupadasCliente" routerLinkActive="active" class="nav-link"><i class="bi bi-door-open"></i> Mis Habitaciones Ocupadas</a>
+      }
+    </nav>
+  </aside>
+
+  <main class="main d-flex flex-column flex-grow-1">
+    <header class="topbar d-flex align-items-center justify-content-end">
+      <button class="btn-salir" (click)="cerrarSesion()">
+        <i class="bi bi-box-arrow-right"></i> Salir
+      </button>
+    </header>
+
+    <div class="content flex-grow-1">
+      <router-outlet></router-outlet>
+    </div>
+
+    <footer class="app-footer">
+      <div class="footer-title">Sistema de Gestión Hotelera</div>
+      <small>Desarrollado por Grupo 7 | Cibertec © 2026</small>
+    </footer>
+  </main>
+</div>

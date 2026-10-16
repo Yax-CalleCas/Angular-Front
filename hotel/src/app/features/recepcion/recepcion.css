@@ -1,0 +1,183 @@
+/* Tablero de recepción — acabado premium sobre el sistema "Sillar y Tinta".
+   Tokens y clases base (st-*) vienen de sillar-tinta.css (src/styles.css). */
+
+:host { display: block; }
+
+/* Página sobre fondo piedra: las tarjetas en sillar blanco ganan profundidad */
+.rc-page { background-color: var(--color-sillar-piedra); }
+
+/* ---------- Cabecera ---------- */
+.rc-header {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--color-junta);
+}
+.rc-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 72px;
+  height: 2px;
+  background-color: var(--color-cochinilla);
+}
+
+.rc-heading { display: flex; align-items: center; gap: 1rem; }
+
+.rc-icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 8px;
+  font-size: 1.25rem;
+  color: var(--color-cochinilla);
+  background-color: var(--color-cochinilla-wash);
+  border: 1px solid rgba(138, 30, 51, 0.15);
+}
+
+.rc-eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-garua);
+}
+
+.rc-title {
+  margin: 0.125rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--color-tinta);
+}
+
+/* ---------- Filtro ---------- */
+.rc-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.3125rem 0.375rem 0.3125rem 1rem;
+  background-color: var(--color-sillar-blanco);
+  border: 1px solid var(--color-junta);
+  border-radius: 999px;
+}
+.rc-filter__label { margin: 0; font-size: 0.75rem; color: var(--color-garua); white-space: nowrap; }
+.rc-select {
+  min-width: 12rem;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  font-weight: 500;
+  background-color: var(--color-sillar-piedra);
+  cursor: pointer;
+}
+
+.rc-count {
+  margin: 0 0 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-garua);
+}
+.rc-count strong { color: var(--color-tinta); font-weight: 500; }
+
+/* ---------- Carga ---------- */
+.rc-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 4rem 0;
+  font-size: 0.8125rem;
+  color: var(--color-garua);
+}
+.rc-loading .st-spinner { width: 1.75rem; height: 1.75rem; border-width: 3px; }
+
+/* ---------- Tarjeta ---------- */
+.rc-card {
+  justify-content: flex-start;
+  gap: 1.125rem;
+  padding: 1.25rem 1.25rem 1.25rem 1.375rem;
+  border-radius: 10px;
+  background-color: var(--color-sillar-blanco);
+  box-shadow: 0 1px 2px rgba(38, 35, 31, 0.05), 0 4px 12px rgba(38, 35, 31, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.rc-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(38, 35, 31, 0.13);
+  border-top-color: #CBC5B4;
+  border-right-color: #CBC5B4;
+  border-bottom-color: #CBC5B4;
+}
+
+.rc-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.rc-room {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.875rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-tinta);
+}
+
+.rc-info {
+  list-style: none;
+  margin: 0;
+  padding: 0.875rem 0 0;
+  display: grid;
+  gap: 0.5rem;
+  border-top: 1px solid var(--color-junta);
+}
+.rc-info li { display: flex; align-items: center; gap: 0.625rem; font-size: 0.8125rem; }
+.rc-info i { font-size: 0.9375rem; color: var(--color-cochinilla); }
+.rc-info span { color: var(--color-tinta); }
+
+/* ---------- Botón ---------- */
+.rc-btn {
+  margin-top: auto;
+  width: 100%;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+  border-radius: 6px;
+}
+.rc-btn.st-btn--primary { box-shadow: 0 2px 6px rgba(138, 30, 51, 0.28); }
+.rc-btn.st-btn--secondary:hover { border-color: var(--color-garua); }
+
+/* ---------- Estado vacío ---------- */
+.rc-empty { text-align: center; padding: 3.5rem 1rem; color: var(--color-garua); }
+.rc-empty i {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  color: var(--color-cochinilla);
+  background-color: var(--color-sillar-blanco);
+  border: 1px solid var(--color-junta);
+}
+.rc-empty p { margin: 0; font-size: 0.875rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-card { transition: none; }
+  .rc-card:hover { transform: none; }
+}

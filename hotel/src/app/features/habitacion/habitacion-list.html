@@ -1,0 +1,290 @@
+<div class="container-fluid py-4 font-ui">
+  <!-- ── Encabezado y Botón de Acción ── -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="h3 fw-bold text-tinta mb-1 font-display">Gestión de Habitaciones</h2>
+      <p class="text-garua text-xs mb-0">Administra el catálogo y el estado de las habitaciones de forma centralizada.</p>
+    </div>
+    <div>
+      <button type="button" class="btn btn-primary-sillar d-flex align-items-center gap-2 shadow-sm px-4 py-2 text-xs" (click)="abrir()">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        <span>Nueva Habitación</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Tarjeta Filtro y Tabla ── -->
+  <div class="card border border-junta shadow-sm rounded-3 bg-sillar-blanco">
+    <div class="card-body p-4">
+
+      <!-- Controles de Filtro -->
+      <div class="row mb-4">
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 border-junta text-garua">
+              <i class="bi bi-search" aria-hidden="true"></i>
+            </span>
+            <input
+              type="search"
+              class="form-control border-start-0 ps-0 text-xs border-junta shadow-none"
+              placeholder="Buscar por número o categoría..."
+              aria-label="Buscar habitaciones por número o categoría"
+              [ngModel]="filtroTexto()"
+              (ngModelChange)="filtroTexto.set($event); paginaActual.set(1)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Spinner Cargando -->
+      @if (isLoading()) {
+        <div class="text-center py-5">
+          <div class="spinner-border text-cochinilla" role="status" style="width: 2rem; height: 2rem;">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="text-garua text-xs mt-2 mb-0">Sincronizando habitaciones...</p>
+        </div>
+      } @else {
+        <!-- Tabla de Datos -->
+        <div class="table-responsive rounded border border-junta bg-white">
+          <table class="table table-hover align-middle mb-0 text-xs">
+            <thead class="bg-sillar-piedra text-tinta border-bottom border-junta">
+              <tr>
+                <th scope="col" class="py-3 px-3" style="width: 90px;">Número</th>
+                <th scope="col" class="py-3 px-3">Categoría</th>
+                <th scope="col" class="py-3 px-3">Piso</th>
+                <th scope="col" class="py-3 px-3">Estado</th>
+                <th scope="col" class="py-3 px-3">Tarifa / Noche</th>
+                <th scope="col" class="py-3 px-3 text-center" style="width: 70px;">Fotos</th>
+                <th scope="col" class="py-3 px-3 text-end" style="width: 140px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-junta">
+              @for (h of habitacionesPaginadas(); track h.idHabitacion || h.numero) {
+                <tr>
+                  <!-- Número -->
+                  <td class="px-3 py-3 font-mono fw-bold text-tinta fs-6">{{ h.numero }}</td>
+
+                  <!-- Categoría -->
+                  <td class="px-3 py-3">
+                    <span class="badge bg-sillar-piedra text-tinta border border-junta fw-normal px-2 py-1">
+                      {{ h.categoriaDesc || 'N/A' }}
+                    </span>
+                  </td>
+
+                  <!-- Piso -->
+                  <td class="px-3 py-3 text-garua">{{ h.pisoDesc || 'N/A' }}</td>
+
+                  <!-- Estado (descripción calculada en el componente a partir de idEstadoHabitacion) -->
+                  <td class="px-3 py-3">
+                    <span [class]="'badge rounded-pill fw-medium px-2.5 py-1 ' + getEstadoBadgeClass(h.estadoHabitacionDesc || '')">
+                      {{ h.estadoHabitacionDesc || 'N/A' }}
+                    </span>
+                  </td>
+
+                  <!-- Tarifa -->
+                  <td class="px-3 py-3 font-mono fw-semibold text-success tabular-nums">
+                    S/ {{ h.precio | number:'1.2-2' }}
+                  </td>
+
+                  <!-- Fotos -->
+                  <td class="px-3 py-3 text-center">
+                    <span class="badge bg-sillar-piedra text-garua rounded-circle px-2 py-1 font-mono">
+                      {{ h.urlsImagenes?.length || 0 }}
+                    </span>
+                  </td>
+
+                  <!-- Acciones -->
+                  <td class="px-3 py-3 text-end">
+                    <div class="dropdown">
+                      <button
+                        class="btn btn-sm btn-secondary-sillar dropdown-toggle text-xs py-1 px-2"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        [attr.aria-label]="'Opciones de la habitación ' + h.numero">
+                        Opciones
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end shadow-sm border border-junta text-xs">
+                        <li>
+                          <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-1.5" (click)="abrir(h)">
+                            <i class="bi bi-pencil text-primary" aria-hidden="true"></i> Editar
+                          </button>
+                        </li>
+                        <li><hr class="dropdown-divider border-junta"></li>
+                        <li>
+                          <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-1.5 text-danger" (click)="eliminar(h)">
+                            <i class="bi bi-trash" aria-hidden="true"></i> Dar de baja
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="text-center py-5 text-garua">
+                    <i class="bi bi-inbox fs-2 d-block mb-2 text-muted" aria-hidden="true"></i>
+                    No se encontraron habitaciones registradas.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        @if (totalPaginas() > 1) {
+          <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top border-junta text-xs text-garua">
+            <span>Página <strong class="text-tinta">{{ paginaActual() }}</strong> de <strong class="text-tinta">{{ totalPaginas() }}</strong></span>
+            <nav aria-label="Paginación de habitaciones">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" [class.disabled]="paginaActual() === 1">
+                  <button type="button" class="page-link border-junta text-tinta bg-white" [disabled]="paginaActual() === 1" (click)="cambiarPagina(paginaActual() - 1)">Anterior</button>
+                </li>
+                @for (pag of paginas(); track pag) {
+                  <li class="page-item" [class.active]="paginaActual() === pag">
+                    <button
+                      type="button"
+                      class="page-link border-junta"
+                      [attr.aria-current]="paginaActual() === pag ? 'page' : null"
+                      (click)="cambiarPagina(pag)">{{ pag }}</button>
+                  </li>
+                }
+                <li class="page-item" [class.disabled]="paginaActual() === totalPaginas()">
+                  <button type="button" class="page-link border-junta text-tinta bg-white" [disabled]="paginaActual() === totalPaginas()" (click)="cambiarPagina(paginaActual() + 1)">Siguiente</button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        }
+      }
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────── Modal Registrar / Editar ───────────────────────── -->
+<div #modalHab class="modal fade" id="modalHabitacion" tabindex="-1" aria-labelledby="modalHabitacionTitulo" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border border-junta shadow-dialog bg-sillar-blanco rounded-3">
+
+      <div class="modal-header bg-sillar-piedra border-bottom border-junta py-3 px-4">
+        <h5 id="modalHabitacionTitulo" class="modal-title fw-bold font-display text-tinta fs-5">
+          {{ habitacion().idHabitacion ? 'Editar Habitación' : 'Nueva Habitación' }}
+        </h5>
+        <button type="button" class="btn-close shadow-none" (click)="cerrarModal()" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body p-4 text-xs font-ui">
+        <form #formHab="ngForm" (ngSubmit)="guardar()">
+          <div class="row g-3">
+
+            <!-- Número -->
+            <div class="col-md-6">
+              <label for="habNumero" class="form-label fw-semibold text-tinta">Número <span class="text-cochinilla">*</span></label>
+              <input id="habNumero" type="text" class="form-control text-xs border-junta shadow-none" required name="numero" [(ngModel)]="habitacion().numero" placeholder="Ej. 101" />
+            </div>
+
+            <!-- Precio -->
+            <div class="col-md-6">
+              <label for="habPrecio" class="form-label fw-semibold text-tinta">Precio / Noche (S/) <span class="text-cochinilla">*</span></label>
+              <input id="habPrecio" type="number" class="form-control text-xs border-junta shadow-none" required min="1" step="0.01" name="precio" [(ngModel)]="habitacion().precio" />
+            </div>
+
+            <!-- Categoría -->
+            <div class="col-md-6">
+              <label for="habCategoria" class="form-label fw-semibold text-tinta">Categoría <span class="text-cochinilla">*</span></label>
+              <select id="habCategoria" class="form-select text-xs border-junta shadow-none" required name="idCategoria" [(ngModel)]="habitacion().idCategoria">
+                <option [ngValue]="null" disabled>Seleccione categoría</option>
+                @for (c of categorias(); track c.idCategoria) {
+                  <option [ngValue]="c.idCategoria">{{ c.descripcion }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Piso -->
+            <div class="col-md-6">
+              <label for="habPiso" class="form-label fw-semibold text-tinta">Piso <span class="text-cochinilla">*</span></label>
+              <select id="habPiso" class="form-select text-xs border-junta shadow-none" required name="idPiso" [(ngModel)]="habitacion().idPiso">
+                <option [ngValue]="null" disabled>Seleccione piso</option>
+                @for (p of pisos(); track p.idPiso) {
+                  <option [ngValue]="p.idPiso">{{ p.descripcion }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Estado operativo -->
+            <div class="col-md-6">
+              <label for="habEstado" class="form-label fw-semibold text-tinta">Estado Operativo <span class="text-cochinilla">*</span></label>
+              <select id="habEstado" class="form-select text-xs border-junta shadow-none" required name="idEstadoHabitacion" [(ngModel)]="habitacion().idEstadoHabitacion">
+                <option [ngValue]="null" disabled>Seleccione estado</option>
+                @for (est of estados(); track est.idEstadoHabitacion) {
+                  <option [ngValue]="est.idEstadoHabitacion">{{ est.descripcion }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Detalles -->
+            <div class="col-12">
+              <label for="habDetalle" class="form-label fw-semibold text-tinta">Detalles</label>
+              <textarea id="habDetalle" class="form-control text-xs border-junta shadow-none" rows="2" name="detalle" [(ngModel)]="habitacion().detalle" placeholder="Ej. Vista a la calle, Cama King..."></textarea>
+            </div>
+
+            <!-- Galería de Fotos -->
+            <div class="col-12 mt-3">
+              <div class="form-label fw-semibold d-flex justify-content-between text-tinta">
+                <span>Fotografías (Máx. {{ maxImagenes }})</span>
+                <span class="text-garua font-mono">{{ habitacion().urlsImagenes?.length || 0 }} / {{ maxImagenes }}</span>
+              </div>
+
+              <div class="d-flex flex-wrap gap-2 mb-2">
+                @for (imgUrl of habitacion().urlsImagenes || []; track $index) {
+                  <div class="position-relative border border-junta rounded overflow-hidden bg-white shadow-sm" style="width: 85px; height: 85px;">
+                    <img [src]="imgUrl" class="w-100 h-100 object-fit-cover" [alt]="'Foto ' + ($index + 1) + ' de la habitación'" />
+                    <button
+                      type="button"
+                      class="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center"
+                      style="width: 22px; height: 22px; border-radius: 0 0 0 4px; background-color: #B3261E; border:none;"
+                      [attr.aria-label]="'Eliminar foto ' + ($index + 1)"
+                      (click)="eliminarImagen($index)">
+                      <i class="bi bi-x text-white" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                }
+
+                @if ((habitacion().urlsImagenes?.length || 0) < maxImagenes) {
+                  <label class="border border-2 border-dashed border-junta rounded d-flex flex-column align-items-center justify-content-center text-garua bg-white cursor-pointer hover:bg-sillar-piedra transition-all" style="width: 85px; height: 85px;">
+                    <i class="bi bi-camera fs-4 mb-1" aria-hidden="true"></i>
+                    <span style="font-size: 10px;" class="fw-medium">Subir foto</span>
+                    <input type="file" class="d-none" accept="image/*" multiple (change)="onArchivosSeleccionados($event)" [disabled]="procesandoImagenes()" />
+                  </label>
+                }
+              </div>
+
+              @if (procesandoImagenes()) {
+                <div class="small text-primary d-flex align-items-center gap-1 mt-1" role="status">
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  <span>Procesando imágenes...</span>
+                </div>
+              }
+            </div>
+
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 border-top border-junta mt-4 pt-3">
+            <button type="button" class="btn btn-secondary-sillar text-xs px-3 py-2" (click)="cerrarModal()" [disabled]="isProcessing()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary-sillar text-xs px-4 py-2" [disabled]="formHab.invalid || isProcessing()">
+              @if (isProcessing()) {
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              }
+              Guardar Habitación
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>

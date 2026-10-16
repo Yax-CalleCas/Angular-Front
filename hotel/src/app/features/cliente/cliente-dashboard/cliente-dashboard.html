@@ -1,0 +1,21 @@
+
+
+<div class="container py-5">
+  <div class="row mb-5">
+    <div class="col-12 text-center text-md-start">
+      <h1 class="display-6 fw-bold text-dark">¡Hola, {{ nombreCliente }}!</h1>
+      <p class="text-muted fs-5">Bienvenido al portal de auto-servicio de tu habitación.</p>
+    </div>
+  </div>
+
+
+    <div class="col-12 mt-4" *ngIf="!idRecepcionActiva">
+      <div class="alert alert-warning border-0 shadow-sm rounded-4 d-flex align-items-center p-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+        <div>
+          <strong>Atención:</strong> No se ha detectado una estancia activa vinculada a tu cuenta de usuario. Solicita al recepcionista que asocie tu perfil a la habitación para activar los pedidos digitales.
+        </div>
+      </div>
+    </div>
+  </div>
+

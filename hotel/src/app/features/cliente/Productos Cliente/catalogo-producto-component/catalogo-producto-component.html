@@ -1,0 +1,65 @@
+<div class="container-fluid py-5 px-4">
+
+  <!-- Contador del Carrito Interactivo -->
+  <div class="d-flex justify-content-end mb-4">
+    <div
+      class="d-flex align-items-center bg-white border border-primary px-4 py-2 rounded-pill shadow-sm cursor-pointer transition-all"
+      (click)="irAlCarrito()"
+      style="cursor: pointer; transition: transform 0.2s;">
+
+      <i class="bi bi-bag-check-fill text-primary fs-4 me-2"></i>
+      <span class="fw-bold text-dark">
+        Mi Carrito:
+        <span class="badge bg-primary rounded-pill ms-2 shadow-sm">{{ cantidadCarrito }}</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-5">
+    <div>
+      <h2 class="fw-bold text-dark">Catálogo de Productos</h2>
+      <p class="text-muted mb-0">Explora nuestra selección exclusiva de productos</p>
+    </div>
+    <span class="badge bg-light text-dark border px-3 py-2">{{ productos.length }} disponibles</span>
+  </div>
+
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+
+    <div class="col" *ngFor="let p of productos; trackBy: trackById">
+      <div class="card h-100 border-0 shadow-sm product-card overflow-hidden">
+
+        <div class="ratio ratio-4x3">
+          <img [src]="p.imagenUrl" class="card-img-top object-fit-cover" [alt]="p.nombre">
+        </div>
+
+        <div class="card-body d-flex flex-column p-4">
+          <h5 class="card-title fw-bold mb-2">{{ p.nombre }}</h5>
+          <p class="card-text text-muted small flex-grow-1">{{ p.detalle }}</p>
+
+          <div class="mt-3">
+            <h4 class="text-primary fw-bold mb-3">
+              {{ p.precio | currency:'USD':'symbol':'1.2-2' }}
+            </h4>
+
+            <button
+              class="btn btn-primary w-100 py-2 fw-semibold rounded-pill"
+              [disabled]="productosAgregando.has(p.idProducto!)"
+              (click)="agregarAlCarrito(p)">
+
+              <ng-container *ngIf="!productosAgregando.has(p.idProducto!)">
+                <i class="bi bi-cart-plus me-2"></i> Agregar
+              </ng-container>
+
+              <ng-container *ngIf="productosAgregando.has(p.idProducto!)">
+                <span class="spinner-border spinner-border-sm me-2"></span> Cargando...
+              </ng-container>
+
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

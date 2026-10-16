@@ -1,0 +1,221 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Marcellus&display=swap');
+
+/* ===== Tokens: sistema Sillar y Tinta ===== */
+:host {
+  --sillar-blanco: #F8F7F4;
+  --sillar-piedra: #EFEDE6;
+  --junta: #DCD8CC;
+  --garua: #6E6A61;
+  --tinta: #26231F;
+
+  --cochinilla: #8A1E33;
+  --cochinilla-hover: #701829;
+  --cochinilla-pressed: #5C1421;
+
+  --ok: #1D7A4F;        --ok-bg: #E7F4EC;
+  --error: #B3261E;     --error-bg: #FCEBE9;
+  --archivado: #5B5B5B; --archivado-bg: #ECECEA;
+
+  --font-display: 'Marcellus', 'Times New Roman', serif;
+  --font-ui: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  display: block;
+  font-family: var(--font-ui);
+  color: var(--tinta);
+  background-color: var(--sillar-blanco);
+  -webkit-font-smoothing: antialiased;
+}
+
+.cat-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+.cat-section + .cat-section { margin-top: 3rem; }
+
+/* ===== Encabezados de sección ===== */
+.cat-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.cat-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  margin: 0 0 0.25rem;
+}
+.cat-subtitle { margin: 0; color: var(--garua); font-size: 0.9rem; }
+
+/* ===== Botones ===== */
+.btn-sy {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  padding: 0.55rem 1.1rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 150ms ease-out;
+}
+.btn-sy-sm { font-size: 0.75rem; padding: 0.3rem 0.65rem; }
+
+.btn-sy-primary { background: var(--cochinilla); color: #fff; }
+.btn-sy-primary:hover:not(:disabled) { background: var(--cochinilla-hover); }
+.btn-sy-primary:active:not(:disabled) { background: var(--cochinilla-pressed); }
+
+.btn-sy-secondary { background: transparent; border-color: var(--junta); color: var(--tinta); }
+.btn-sy-secondary:hover:not(:disabled) { background: var(--sillar-piedra); }
+
+.btn-sy-danger { background: transparent; border-color: var(--junta); color: var(--error); }
+.btn-sy-danger:hover:not(:disabled) { background: var(--error-bg); border-color: var(--error); }
+
+.btn-sy:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-sy:focus-visible,
+.sy-input:focus-visible,
+.form-check-input:focus-visible,
+.btn-close:focus-visible {
+  outline: 2px solid var(--cochinilla);
+  outline-offset: 2px;
+}
+
+/* ===== Panel y tabla ===== */
+.cat-panel {
+  background: var(--sillar-blanco);
+  border: 1px solid var(--junta);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cat-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.cat-table thead th {
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--garua);
+  padding: 0.7rem 1rem;
+  background: var(--sillar-piedra);
+  border-bottom: 1px solid var(--junta);
+  white-space: nowrap;
+}
+.cat-table thead th.text-center { text-align: center; }
+.cat-table .col-id { width: 80px; }
+
+.cat-table tbody td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--junta);
+  vertical-align: middle;
+}
+.cat-table tbody tr:last-child td { border-bottom: 0; }
+.cat-table tbody tr:hover { background: rgba(239, 237, 230, 0.6); }
+.cat-table tbody tr.is-archived { color: var(--garua); }
+
+.cat-id { font-family: var(--font-mono); color: var(--garua); font-variant-numeric: tabular-nums; }
+.cat-desc { font-weight: 500; }
+.cat-actions { display: inline-flex; gap: 0.5rem; }
+.cat-state { text-align: center; color: var(--garua); padding: 2rem 1rem !important; }
+
+.cat-footer {
+  padding: 0.6rem 1rem;
+  background: var(--sillar-piedra);
+  border-top: 1px solid var(--junta);
+  font-size: 0.8rem;
+  color: var(--garua);
+}
+
+/* ===== Píldora de estado ===== */
+.estado-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.25;
+  background: var(--archivado-bg);
+  color: var(--archivado);
+}
+.estado-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.estado-pill.is-ok { background: var(--ok-bg); color: var(--ok); }
+
+/* ===== Campos ===== */
+.sy-input {
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  color: var(--tinta);
+  background: var(--sillar-blanco);
+  border: 1px solid var(--junta);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+}
+.sy-input::placeholder { color: var(--garua); opacity: 0.8; }
+.sy-input.ng-invalid.ng-touched { border-color: var(--error); }
+
+.sy-label { display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; }
+.sy-label .req { color: var(--cochinilla); }
+.sy-hint { font-size: 0.75rem; color: var(--garua); margin: 0.35rem 0 0; }
+
+.sy-switch { margin-top: 1.25rem; }
+.sy-switch .form-check-input:checked { background-color: var(--cochinilla); border-color: var(--cochinilla); }
+.sy-switch .form-check-label { font-size: 0.875rem; }
+
+/* ===== Modales ===== */
+.sy-modal {
+  background: var(--sillar-blanco);
+  border: 1px solid var(--junta);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(38, 35, 31, 0.18);
+  overflow: hidden;
+  font-family: var(--font-ui);
+}
+.sy-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: var(--sillar-piedra);
+  border-bottom: 1px solid var(--junta);
+}
+.sy-modal-title { font-family: var(--font-display); font-weight: 400; font-size: 1.3rem; margin: 0; }
+.sy-modal-body { padding: 1.5rem; }
+.sy-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.85rem 1.5rem;
+  background: var(--sillar-piedra);
+  border-top: 1px solid var(--junta);
+}
+
+/* ===== Spinner ===== */
+.sy-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-left-color: currentColor;
+  border-radius: 50%;
+  animation: sy-spin 0.8s linear infinite;
+}
+@keyframes sy-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sy-spinner { animation-duration: 2s; }
+  .btn-sy { transition: none; }
+}
+
+@media (max-width: 575.98px) {
+  .cat-actions { flex-direction: column; }
+}

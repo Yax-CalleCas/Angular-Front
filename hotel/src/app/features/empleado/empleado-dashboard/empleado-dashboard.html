@@ -1,0 +1,13 @@
+<div class="container py-5 text-center">
+  <h2 class="mb-4">Bienvenido, Empleado</h2>
+
+  <div class="d-flex justify-content-center gap-3">
+    <a [routerLink]="['/admin/clientes']" class="btn btn-success btn-lg shadow-sm">
+      <i class="bi bi-person-vcard-fill me-2"></i> Gestión de Clientes
+    </a>
+
+    <button (click)="cerrarSesion()" class="btn btn-outline-danger btn-lg shadow-sm">
+      <i class="bi bi-box-arrow-right me-2"></i> Cerrar Sesión
+    </button>
+  </div>
+</div>

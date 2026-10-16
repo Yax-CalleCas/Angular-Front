@@ -1,0 +1,166 @@
+<div class="container mt-4">
+  <div class="card shadow-lg border-0 rounded-4">
+    <div class="card-header text-white rounded-top-4 py-3" [style.backgroundColor]="esOcupada() ? '#343a40' : '#64CAD1'">
+      <h4 class="mb-0 fw-bold">
+        <i class="bi me-2" [ngClass]="esOcupada() ? 'bi-lock' : 'bi-calendar-plus'"></i>
+        {{ esOcupada() ? 'Detalle de Recepción Activa' : 'Registrar Recepción' }}
+      </h4>
+    </div>
+
+    <div class="card-body p-4">
+      <div class="alert border-0 rounded-3 p-3 mb-4 shadow-sm" style="background-color: rgba(100, 202, 209, 0.1);" *ngIf="habitacion()">
+  <h5 class="fw-bold mb-3" style="color: #1d6d50;">
+    <i class="bi bi-house-door-fill me-2"></i> Detallessss de la Habitación
+  </h5>
+  <div class="row text-secondary">
+    <div class="col-md-3 mb-2">
+      <strong>Número:</strong> <span class="text-dark">{{ habitacion()?.numero }}</span>
+    </div>
+
+    <div class="col-md-3 mb-2">
+      <strong>Categoría:</strong> <span class="text-dark">{{ getCatNombre(habitacion()?.idCategoria ?? 0) }}</span>
+    </div>
+
+    <div class="col-md-3 mb-2">
+      <strong>Piso:</strong> <span class="text-dark">{{ getPisoNombre(habitacion()?.idPiso ?? 0) }}</span>
+    </div>
+
+    <div class="col-md-3 mb-2">
+      <strong>Precio/Noche:</strong> <span class="text-dark">S/. {{ habitacion()?.precio | number:'1.2-2' }}</span>
+    </div>
+  </div>
+</div>
+
+
+      <form #f="ngForm" (ngSubmit)="guardar()">
+        <div class="row g-4">
+          <div class="col-md-6 border-end">
+            <h5 class="fw-bold text-muted mb-3"><i class="bi bi-person-badge me-2"></i> Detalle Cliente</h5>
+
+            <div class="mb-3" *ngIf="!esOcupada()">
+              <label class="form-label">Buscar cliente por DNI:</label>
+              <div class="input-group">
+                <input type="text" class="form-control" [ngModel]="dniBusqueda()" (ngModelChange)="dniBusqueda.set($event)" name="dniBusqueda" placeholder="Ej: 72345678">
+                <button type="button" class="btn text-white" style="background-color: #64CAD1;" (click)="buscarCliente()">Buscar</button>
+                <button type="button" class="btn btn-outline-secondary" (click)="abrirModalClientes()">Lista</button>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tipo Documento:</label>
+                <input type="text" class="form-control bg-light" [ngModel]="recepcion().tipoDocumento" name="tipoDocumento" readonly>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Nro. Documento:</label>
+                <input type="text" class="form-control bg-light" [ngModel]="recepcion().documento" name="documento" readonly>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Nombres y Apellidos:</label>
+              <input type="text" class="form-control bg-light" [value]="(recepcion().nombre || '') + ' ' + (recepcion().apellido || '')" readonly>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Correo:</label>
+              <input type="text" class="form-control bg-light" [ngModel]="recepcion().correo" name="correo" readonly>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <h5 class="fw-bold text-muted mb-3"><i class="bi bi-calendar-check me-2"></i> Detalle Reservación</h5>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Fecha Entrada:</label>
+                <input type="date" class="form-control" [(ngModel)]="recepcion().fechaEntrada" (change)="calcularTotal()" name="fechaEntrada" required [readonly]="esOcupada()">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Noches:</label>
+                <input type="number" class="form-control" [ngModel]="noches()" (ngModelChange)="noches.set(+$event); calcularTotal()" name="noches" min="1" [readonly]="esOcupada()">
+              </div>
+            </div>
+
+    <div class="row">
+
+  <div class="col-md-6 mb-3">
+    <label class="form-label">Fecha Salida:</label>
+    <input type="date" class="form-control" [(ngModel)]="recepcion().fechaSalida" (change)="calcularTotal()" name="fechaSalida" required [readonly]="esOcupada()">
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 mb-3">
+    <label class="form-label">Cantidad de Noches:</label>
+    <input type="number" class="form-control bg-light" [value]="noches()" readonly>
+  </div>
+  <div class="col-md-6 mb-3">
+    <label class="form-label">Total a Pagar (S/.):</label>
+    <input type="number" class="form-control fw-bold text-primary bg-light" [ngModel]="recepcion().precioInicial" name="precioInicial" readonly>
+  </div>
+</div>
+            <div class="mb-3">
+              <label class="form-label">Adelanto (S/.):</label>
+              <input type="number" class="form-control" [ngModel]="recepcion().adelanto" (ngModelChange)="recepcion.update(r => ({ ...r, adelanto: $event })); calcularTotal()" name="adelanto" [readonly]="esOcupada()">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Observación:</label>
+              <textarea class="form-control" [(ngModel)]="recepcion().observacion" name="observacion" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-end mt-4 pt-3 border-top">
+          <button type="button" class="btn btn-outline-secondary px-4 me-2" routerLink="/admin/recepcion">Volver</button>
+          <button type="submit" class="btn text-white px-4" style="background-color: #64CAD1;" *ngIf="!esOcupada()" [disabled]="!f.valid || !recepcion().idCliente">
+            Registrar Reservación
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="container mt-4">
+  </div>
+
+<div class="modal fade" id="modalClientes" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Seleccionar Cliente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="list-group list-group-flush mb-3">
+          <button type="button" class="list-group-item list-group-item-action py-3"
+                  *ngFor="let p of personasPaginadas()"
+                  (click)="seleccionarPersona(p)"
+                  data-bs-dismiss="modal">
+            <h6 class="mb-1 fw-bold">{{ p.nombre }} {{ p.apellido }}</h6>
+            <span class="badge bg-secondary">DNI: {{ p.documento }}</span>
+          </button>
+        </div>
+
+        <nav *ngIf="totalPaginas() > 1" aria-label="Navegación de clientes">
+          <ul class="pagination justify-content-center">
+            <li class="page-item" [class.disabled]="paginaActual() === 0">
+              <button class="page-link" (click)="cambiarPagina(paginaActual() - 1)">Anterior</button>
+            </li>
+
+            <li class="page-item active">
+              <span class="page-link">{{ paginaActual() + 1 }} / {{ totalPaginas() }}</span>
+            </li>
+
+            <li class="page-item" [class.disabled]="paginaActual() === totalPaginas() - 1">
+              <button class="page-link" (click)="cambiarPagina(paginaActual() + 1)">Siguiente</button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+

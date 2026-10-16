@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/app",
+    "rootDir": "src",
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/**/*.ts"
+, "src/app/features/habitacion", "src/app/features/estadohabitacion"  ],
+  "exclude": [
+    "src/**/*.spec.ts"
+  ]
+}

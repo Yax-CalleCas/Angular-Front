@@ -1,0 +1,86 @@
+<div class="container-fluid py-4">
+  <div class="card shadow-sm border-0 rounded-3">
+    <div class="card-header bg-dark text-white rounded-top-3 py-3">
+      <h4 class="mb-0 fw-bold">
+        <i class="bi bi-door-open me-2"></i> Procesar Salida - Habitación {{ datosHospedaje()?.numero }}
+      </h4>
+    </div>
+
+    <div class="card-body p-4" *ngIf="datosHospedaje() as h">
+
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <h5 class="fw-bold text-primary border-bottom pb-2">Resumen de la Habitación</h5>
+          <p class="mb-1"><strong>Número:</strong> {{ h.numero }}</p>
+          <p class="mb-1"><strong>Detalles:</strong> {{ h.detalleHabitacion }}</p>
+          <p class="mb-1"><strong>Categoría:</strong> {{ h.categoriaNombre }}</p>
+          <p class="mb-1"><strong>Piso:</strong> {{ h.pisoNombre }}</p>
+        </div>
+        <div class="col-md-6">
+          <h5 class="fw-bold text-primary border-bottom pb-2">Cliente</h5>
+          <p class="mb-1"><strong>Cliente:</strong> {{ h.nombre }} {{ h.apellido }}</p>
+          <p class="mb-1"><strong>Nro. Documento:</strong> {{ h.tipoDocumento }} - {{ h.documento }}</p>
+          <p class="mb-1"><strong>Correo:</strong> {{ h.correo }}</p>
+          <p class="mb-1"><strong>Fecha Entrada:</strong> {{ h.fechaEntrada }}</p>
+        </div>
+      </div>
+
+      <h5 class="fw-bold text-primary border-bottom pb-2 mb-3">Costo de Hospedaje</h5>
+      <div class="row bg-light p-3 rounded mb-4 align-items-center">
+        <div class="col-md-3"><strong>Costo Habitación:</strong> S/ {{ h.precioInicial | number:'1.2-2' }}</div>
+        <div class="col-md-3"><strong>Cantidad Adelantado:</strong> S/ {{ h.adelanto | number:'1.2-2' }}</div>
+        <div class="col-md-3"><strong>Cantidad Restante:</strong> S/ {{ h.precioRestante | number:'1.2-2' }}</div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold mb-0">Costo por Penalidad:</label>
+          <input type="number" [(ngModel)]="costoPenalidad" class="form-control form-control-sm" placeholder="0.00">
+        </div>
+      </div>
+
+      <h5 class="fw-bold text-primary border-bottom pb-2 mb-3">Servicio a la Habitación</h5>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Precio Unitario</th>
+              <th>Estado Venta</th>
+              <th>Sub Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of servicios()">
+              <td>{{ s.producto }}</td>
+              <td>{{ s.cantidad }}</td>
+              <td>S/ {{ s.precioUnitario | number:'1.2-2' }}</td>
+              <td>
+                <span class="badge" [ngClass]="s.estadoVenta === 'PAGADO' ? 'bg-success' : 'bg-warning text-dark'">
+                  {{ s.estadoVenta }}
+                </span>
+              </td>
+              <td>S/ {{ s.subTotal | number:'1.2-2' }}</td>
+            </tr>
+            <tr *ngIf="servicios().length === 0">
+              <td colspan="5" class="text-center text-muted py-3">No hay consumos adicionales.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-dark text-white rounded">
+        <h3 class="mb-0">Total Neto a Pagar: S/ {{ totalNetoAPagar() | number:'1.2-2' }}</h3>
+        <div>
+  <button class="btn btn-outline-secondary me-2" routerLink="/admin/recepcion" [disabled]="isLoading()">
+    Volver
+  </button>
+
+  <button class="btn btn-success px-4" (click)="finalizarCheckOut()" [disabled]="isLoading()">
+    <i class="bi" [ngClass]="isLoading() ? 'bi-hourglass-split' : 'bi-check-circle'"></i>
+    {{ isLoading() ? 'Procesando...' : 'Registrar Salida' }}
+  </button>
+</div>
+      </div>
+
+    </div>
+  </div>
+</div>

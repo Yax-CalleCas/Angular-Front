@@ -1,0 +1,352 @@
+<div class="container py-5">
+
+  <!-- Encabezado -->
+  <div class="d-flex align-items-center mb-4">
+    <button
+      type="button"
+      class="btn btn-outline-secondary me-3"
+      routerLink="/cliente/catalogo">
+
+      <i class="bi bi-arrow-left"></i>
+
+    </button>
+
+    <div>
+      <h2 class="fw-bold mb-0">
+        Confirmar Reserva
+      </h2>
+
+      <small class="text-muted">
+        Revise la información antes de confirmar el alquiler.
+      </small>
+    </div>
+  </div>
+
+  <!-- Cargando -->
+  <div *ngIf="cargando" class="text-center py-5">
+
+    <div class="spinner-border text-primary"></div>
+
+    <p class="mt-3">
+      Cargando información...
+    </p>
+
+  </div>
+
+  <!-- Contenido -->
+  <div
+    class="row g-4"
+    *ngIf="!cargando && habitacion">
+
+    <!-- Información Habitación -->
+    <div class="col-lg-4">
+
+      <div class="card shadow border-0 h-100">
+
+        <img
+          [src]="habitacion.urlsImagenes?.[0] ?? 'assets/img/default-room.jpg'"
+          class="card-img-top"
+          alt="Habitación">
+
+        <div class="card-body">
+
+          <h4 class="fw-bold">
+            Habitación {{ habitacion.numero }}
+          </h4>
+
+          <span class="badge bg-primary mb-3">
+            {{ habitacion.categoriaNombre }}
+          </span>
+
+          <p class="text-muted">
+            {{ habitacion.detalle }}
+          </p>
+
+          <hr>
+
+          <p>
+            <strong>Piso:</strong>
+            {{ habitacion.idPiso }}
+          </p>
+
+          <p>
+            <strong>Estado:</strong>
+
+            <span
+              class="badge"
+              [class.bg-success]="habitacion.estadoDescripcion === 'Disponible'"
+              [class.bg-danger]="habitacion.estadoDescripcion !== 'Disponible'">
+
+              {{ habitacion.estadoDescripcion }}
+
+            </span>
+
+          </p>
+
+          <hr>
+
+          <div class="d-flex justify-content-between">
+
+            <span>Precio por noche</span>
+
+            <strong class="text-success">
+              {{ habitacion.precio | currency:'USD' }}
+            </strong>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Formulario -->
+    <div class="col-lg-8">
+
+      <form
+        class="card shadow border-0"
+        [formGroup]="alquilerForm"
+        (ngSubmit)="confirmarAlquiler()">
+
+        <div class="card-body">
+
+          <h4 class="fw-bold mb-4">
+            Datos del Cliente
+          </h4>
+
+          <div class="row">
+
+            <div class="col-md-6 mb-3">
+
+              <label class="form-label">
+                Cliente
+              </label>
+
+              <input
+                type="text"
+                class="form-control"
+                formControlName="clienteNombre"
+                readonly>
+
+            </div>
+
+            <div class="col-md-3 mb-3">
+
+              <label class="form-label">
+                Fecha ingreso
+              </label>
+
+              <input
+                type="date"
+                class="form-control"
+                formControlName="fechaIngreso">
+
+            </div>
+
+            <div class="col-md-3 mb-3">
+
+              <label class="form-label">
+                Fecha salida
+              </label>
+
+              <input
+                type="date"
+                class="form-control"
+                formControlName="fechaSalida">
+
+            </div>
+
+            <div class="col-md-4 mb-3">
+
+              <label class="form-label">
+                Noches
+              </label>
+
+              <input
+                class="form-control"
+                [value]="calcularNoches"
+                readonly>
+
+            </div>
+
+            <div class="col-md-4 mb-3">
+
+              <label class="form-label">
+                Precio por noche
+              </label>
+
+              <input
+                class="form-control"
+                [value]="habitacion.precio | currency:'USD'"
+                readonly>
+
+            </div>
+
+            <div class="col-md-4 mb-3">
+
+              <label class="form-label">
+                Total a pagar
+              </label>
+
+              <input
+                class="form-control fw-bold text-success"
+                [value]="precioTotalCalculado | currency:'USD'"
+                readonly>
+
+            </div>
+
+            <div class="col-md-12 mb-3">
+
+              <label class="form-label">
+                Monto entregado
+              </label>
+
+              <input
+                type="number"
+                class="form-control"
+                formControlName="montoPagado"
+                placeholder="Ingrese el monto entregado">
+
+            </div>
+
+            <div class="col-12 mb-3">
+
+              <label class="form-label">
+                Observaciones
+              </label>
+
+              <textarea
+                rows="4"
+                class="form-control"
+                formControlName="observaciones">
+              </textarea>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="card-footer bg-white">
+
+          <div class="d-grid">
+
+            <button
+              type="submit"
+              class="btn btn-primary btn-lg"
+              [disabled]="alquilerForm.invalid">
+
+              <i class="bi bi-check-circle-fill me-2"></i>
+
+              Continuar al Pago
+
+            </button>
+
+          </div>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Modal -->
+
+<div
+  *ngIf="mostrarModalPago"
+  class="modal-overlay">
+
+  <div class="modal-content shadow-lg rounded-4 p-4">
+
+    <h3 class="fw-bold mb-4">
+
+      <i class="bi bi-credit-card-fill text-success me-2"></i>
+
+      Confirmar Pago
+
+    </h3>
+
+    <table class="table">
+
+      <tr>
+        <th>Cliente</th>
+        <td>{{ alquilerForm.getRawValue().clienteNombre }}</td>
+      </tr>
+
+      <tr>
+        <th>Habitación</th>
+        <td>{{ habitacion?.numero }}</td>
+      </tr>
+
+      <tr>
+        <th>Noches</th>
+        <td>{{ calcularNoches }}</td>
+      </tr>
+
+      <tr>
+        <th>Total</th>
+        <td>{{ precioTotalCalculado | currency:'USD' }}</td>
+      </tr>
+
+      <tr>
+        <th>Monto entregado</th>
+        <td>{{ alquilerForm.get('montoPagado')?.value | currency:'USD' }}</td>
+      </tr>
+
+      <tr>
+        <th>Saldo pendiente</th>
+        <td class="text-danger">
+
+          {{
+            (precioTotalCalculado - (alquilerForm.get('montoPagado')?.value || 0))
+            | currency:'USD'
+          }}
+
+        </td>
+      </tr>
+
+    </table>
+
+    <div class="d-flex justify-content-end gap-2">
+
+      <button
+        class="btn btn-outline-secondary"
+        (click)="mostrarModalPago=false">
+
+        Cancelar
+
+      </button>
+
+      <button
+        class="btn btn-success"
+        [disabled]="procesando"
+        (click)="procesarPagoFinal()">
+
+        <span *ngIf="!procesando">
+
+          <i class="bi bi-check-circle-fill me-2"></i>
+
+          Confirmar Pago
+
+        </span>
+
+        <span *ngIf="procesando">
+
+          <span class="spinner-border spinner-border-sm me-2"></span>
+
+          Procesando...
+
+        </span>
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>

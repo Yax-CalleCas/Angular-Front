@@ -1,0 +1,118 @@
+<div class="container py-4">
+  <h2 class="mb-4">Registro de Consumos</h2>
+
+  <div class="card mb-4 shadow-sm border-0 bg-light">
+    <div class="card-body">
+      <h6 class="text-primary fw-bold mb-3">Resumen de la Habitación</h6>
+      <div class="row" *ngIf="datosRecepcion; else loading">
+        <div class="col-md-3 mb-3">
+          <label class="text-muted d-block small fw-bold">Número:</label>
+          <span>{{ datosRecepcion?.numero }}</span>
+        </div>
+        <div class="col-md-3 mb-3">
+          <label class="text-muted d-block small fw-bold">Detalles:</label>
+          <span>{{ datosRecepcion?.detalle || 'WIFI + BAÑO + TV + CABLE' }}</span>
+        </div>
+        <div class="col-md-3 mb-3">
+          <label class="text-muted d-block small fw-bold">Categoría:</label>
+          <span>{{ datosRecepcion?.categoriaNombre }}</span>
+        </div>
+        <div class="col-md-3 mb-3">
+          <label class="text-muted d-block small fw-bold">Cliente:</label>
+          <span>{{ datosRecepcion?.nombre }} {{ datosRecepcion?.apellido }}</span>
+        </div>
+      </div>
+      <ng-template #loading>
+        <div class="text-center py-2 text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+          Cargando datos de recepción...
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <h6 class="text-primary fw-bold mb-4">Selección de Productos</h6>
+
+      <div class="row align-items-end mb-4">
+        <div class="col-md-5">
+          <label class="form-label text-muted small">Producto:</label>
+          <select [(ngModel)]="productoSeleccionadoId" class="form-select">
+            <option [ngValue]="0" disabled>Seleccione un producto</option>
+            <option *ngFor="let p of listaProductos" [ngValue]="p.idProducto">
+              {{ p.nombre }}
+            </option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label text-muted small">Precio:</label>
+          <!-- Cambia de [value]="precioProductoSeleccionado..." a -->
+<input type="text" class="form-control bg-light" [value]="obtenerPrecioActual() | number:'1.2-2'" readonly>
+   </div>
+        <div class="col-md-2">
+          <label class="form-label text-muted small">Cantidad:</label>
+          <input type="number" [(ngModel)]="cantidad" class="form-control" min="1">
+        </div>
+        <div class="col-md-3">
+          <button class="btn text-white w-100" style="background-color: #10b981;" (click)="agregarAlCarrito()">
+            Agregar al Carrito
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive mb-4">
+        <table class="table table-bordered align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th style="width: 80px;" class="text-center">Acción</th>
+              <th>Producto</th>
+              <th class="text-center">Cantidad</th>
+              <th class="text-end">Precio Unit.</th>
+              <th class="text-end">Sub Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of carrito; let i = index">
+              <td class="text-center">
+                <button class="btn btn-sm btn-outline-danger" (click)="carrito.splice(i, 1)">Eliminar</button>
+              </td>
+              <td>{{ item.nombre }}</td>
+              <td class="text-center">{{ item.cantidad }}</td>
+              <td class="text-end">S/ {{ item.precio | number:'1.2-2' }}</td>
+              <td class="text-end fw-bold">S/ {{ item.subTotal | number:'1.2-2' }}</td>
+            </tr>
+            <tr *ngIf="carrito.length === 0">
+              <td colspan="5" class="text-center text-muted py-3">No hay productos agregados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="row g-3 border-top pt-3">
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text bg-secondary text-white">Estado Venta</span>
+            <select [(ngModel)]="estadoVenta" class="form-select">
+              <option value="PENDIENTE">Pendiente (Cargar a cuenta)</option>
+              <option value="PAGADO">Pagado (Cancelado inmediato)</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="input-group">
+            <span class="input-group-text fw-bold">TOTAL</span>
+            <input type="text" class="form-control text-end fw-bold" [value]="'S/ ' + (getTotal() | number:'1.2-2')" readonly>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-primary w-100 fw-bold"
+                  [disabled]="isProcessing || carrito.length === 0"
+                  (click)="registrarVenta()">
+            {{ isProcessing ? 'Procesando...' : 'Finalizar Venta' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

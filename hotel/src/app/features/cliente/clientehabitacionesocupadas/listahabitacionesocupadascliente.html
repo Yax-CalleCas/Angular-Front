@@ -1,0 +1,32 @@
+<div class="container py-4">
+  <h3 class="mb-4">Tus Habitaciones</h3>
+
+  <div *ngIf="isLoading()" class="text-center py-3 text-muted">
+    <div class="spinner-border spinner-border-sm me-2"></div>
+    Cargando...
+  </div>
+
+  <div *ngIf="!isLoading() && habitacionesActivas().length === 0" class="alert alert-info">
+    No tienes habitaciones activas en este momento.
+  </div>
+
+  <div class="row g-3" *ngIf="!isLoading()">
+    <div class="col-md-4" *ngFor="let h of habitacionesActivas(); trackBy: trackById">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Habitación {{ h.numero }}</h5>
+          <p class="card-text mb-1"><strong>Categoría:</strong> {{ h.categoriaNombre }}</p>
+          <p class="card-text mb-3"><strong>Piso:</strong> {{ h.pisoNombre }}</p>
+
+          <button
+            class="btn btn-primary w-100"
+            (click)="irAlCarrito(h)"
+          >
+            Comprar productos
+          </button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

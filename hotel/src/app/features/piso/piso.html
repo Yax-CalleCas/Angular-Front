@@ -1,0 +1,115 @@
+<div class="piso-page">
+
+  <!-- ================= ENCABEZADO ================= -->
+  <header class="piso-header">
+    <div>
+      <h1 class="piso-title">Pisos</h1>
+      <p class="piso-subtitle">Los niveles del hotel donde se ubican las habitaciones.</p>
+    </div>
+    <button type="button" class="btn-sy btn-sy-primary" (click)="abrir()">
+      Registrar piso
+    </button>
+  </header>
+
+  <!-- ================= TABLA ================= -->
+  <section class="piso-panel" aria-label="Listado de pisos">
+
+    <div class="table-responsive">
+      <table class="piso-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-id">ID</th>
+            <th scope="col">Descripción</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          @if (isLoading) {
+            <tr>
+              <td colspan="4" class="piso-state">
+                <span class="sy-spinner sy-spinner-dark" aria-hidden="true"></span>
+                Cargando pisos...
+              </td>
+            </tr>
+          } @else {
+            @for (p of pisos; track p.idPiso) {
+              <tr [class.is-archived]="!p.estado">
+                <td class="piso-id">{{ p.idPiso }}</td>
+                <td class="piso-desc">{{ p.descripcion }}</td>
+                <td>
+                  <span class="estado-pill" [class.is-ok]="p.estado">
+                    <span class="dot"></span>{{ p.estado ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <button type="button" class="btn-sy btn-sy-secondary btn-sy-sm"
+                          (click)="abrir(p)"
+                          [attr.aria-label]="'Editar ' + p.descripcion">Editar</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="piso-state">
+                  Aún no hay pisos registrados. Usa "Registrar piso" para crear el primero.
+                </td>
+              </tr>
+            }
+          }
+
+        </tbody>
+      </table>
+    </div>
+
+    @if (!isLoading) {
+      <footer class="piso-footer">{{ pisos.length }} registros</footer>
+    }
+  </section>
+</div>
+
+<!-- ================= MODAL DE PISO ================= -->
+<div class="modal fade" id="modalPiso" tabindex="-1" aria-labelledby="modalPisoTitulo"
+     aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content sy-modal">
+
+      <div class="sy-modal-header">
+        <h2 class="sy-modal-title" id="modalPisoTitulo">
+          {{ piso.idPiso ? 'Editar piso' : 'Registrar piso' }}
+        </h2>
+        <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModal()"></button>
+      </div>
+
+      <form #f="ngForm" (ngSubmit)="guardar()" novalidate>
+        <div class="sy-modal-body">
+
+          <label for="pisoDescripcion" class="sy-label">Descripción <span class="req">*</span></label>
+          <input id="pisoDescripcion" name="descripcion" type="text" class="sy-input" required
+                 placeholder="Ej. Piso 1" [(ngModel)]="piso.descripcion" />
+
+          <div class="form-check form-switch sy-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="estadoPiso"
+                   name="estado" [(ngModel)]="piso.estado" />
+            <label class="form-check-label" for="estadoPiso">
+              {{ piso.estado ? 'Piso activo' : 'Piso inactivo' }}
+            </label>
+          </div>
+
+        </div>
+
+        <div class="sy-modal-footer">
+          <button type="button" class="btn-sy btn-sy-secondary" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-sy btn-sy-primary" [disabled]="!f.valid || isProcessing">
+            @if (isProcessing) {
+              <span class="sy-spinner" aria-hidden="true"></span> Guardando...
+            } @else {
+              Guardar piso
+            }
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>

@@ -1,0 +1,175 @@
+<div class="page-head">
+  <div>
+    <div class="page-eyebrow">Gestión</div>
+    <h1 class="page-title display">Clientes</h1>
+    <p class="page-sub">Consulta, registra y administra a los huéspedes del hotel.</p>
+  </div>
+  <button class="btn-sy btn-sy-primary btn-sy-lg glow" (click)="nuevoCliente()">
+    <i class="bi bi-plus-lg"></i> Nuevo cliente
+  </button>
+</div>
+
+<section class="card-sy elevated">
+  <div class="toolbar">
+    <div class="grow">
+      <label class="label-sy" for="busqueda">Buscar cliente</label>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input id="busqueda" class="input-sy" [(ngModel)]="terminoBusqueda" (input)="currentPage=1"
+               placeholder="Nombre, apellido o documento...">
+      </div>
+    </div>
+    <div>
+      <label class="label-sy" for="registros">Registros</label>
+      <select id="registros" class="input-sy select-sm" [(ngModel)]="itemsPerPage" (change)="currentPage=1">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table-sy premium">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Documento</th>
+          <th class="center">Estado</th>
+          <th class="center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of paginatedPersonas; trackBy: trackByPersona">
+          <td>
+            <div class="person">
+              <img class="avatar-lg" [src]="p.fotoUrl || 'assets/default-avatar.png'" alt="Foto de {{ p.nombre }}" (error)="onImgError($event)">
+              <div>
+                <div class="cell-main">{{ p.nombre }} {{ p.apellido }}</div>
+                <div class="cell-sub">{{ p.correo }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="cell-main mono">{{ p.documento }}</div>
+            <div class="cell-sub">{{ p.tipoDocumento }}</div>
+          </td>
+          <td class="center">
+            <button type="button" class="badge-pill" [ngClass]="p.estado ? 'badge-ok' : 'badge-archivado'"
+                    (click)="cambiarEstado(p)" [title]="p.estado ? 'Clic para desactivar' : 'Clic para activar'">
+              <span class="dot"></span> {{ p.estado ? 'Activo' : 'Inactivo' }}
+            </button>
+          </td>
+          <td class="center">
+  <div class="row-actions">
+    <!-- Botón Editar -->
+    <button class="icon-btn" (click)="editarCliente(p)" title="Editar" aria-label="Editar cliente">
+      <i class="bi bi-pencil-square"></i>
+    </button>
+
+    <!-- Botón Bloquear / Desbloquear dinámico -->
+    <button class="icon-btn"
+            [ngClass]="p.estado ? 'warning' : 'success'"
+            (click)="cambiarEstado(p)"
+            [title]="p.estado ? 'Bloquear' : 'Desbloquear'"
+            [aria-label]="p.estado ? 'Bloquear cliente' : 'Desbloquear cliente'">
+      <i class="bi" [ngClass]="p.estado ? 'bi-slash-circle' : 'bi-check-circle'"></i>
+    </button>
+  </div>
+</td>
+        </tr>
+
+        <tr *ngIf="paginatedPersonas.length === 0">
+          <td colspan="4">
+            <div class="empty-state">
+              <i class="bi bi-person-x"></i>
+              <strong>Sin resultados</strong>
+              No encontramos clientes con ese criterio de búsqueda.
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager" *ngIf="totalPages > 1">
+    <span>Página {{ currentPage }} de {{ totalPages }}</span>
+    <div class="pager-btns">
+      <button class="pager-btn" [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)" aria-label="Anterior">&laquo;</button>
+      <button class="pager-btn" *ngFor="let item of [].constructor(totalPages); let i = index"
+              [class.active]="currentPage === (i + 1)" (click)="changePage(i + 1)">{{ i + 1 }}</button>
+      <button class="pager-btn" [disabled]="currentPage === totalPages" (click)="changePage(currentPage + 1)" aria-label="Siguiente">&raquo;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MODAL ============ -->
+<div class="modal fade modal-sy" id="modalPersona" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-sy-head">
+        <div>
+          <div class="eyebrow">{{ personaSeleccionada.idPersona ? 'Edición' : 'Nuevo registro' }}</div>
+          <h5>{{ personaSeleccionada.idPersona ? 'Editar cliente' : 'Registrar cliente' }}</h5>
+        </div>
+        <button type="button" class="modal-sy-close" data-bs-dismiss="modal" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <div class="modal-sy-body">
+        <form #f="ngForm" (ngSubmit)="f.valid && guardar()" novalidate>
+
+          <div class="form-section">Identificación</div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-5">
+              <label class="label-sy">Tipo de documento</label>
+              <select [(ngModel)]="personaSeleccionada.tipoDocumento" name="tipo" class="input-sy" required>
+                <option value="" disabled>Seleccione...</option>
+                <option value="DNI">DNI</option>
+                <option value="CARNE EXTRANJERIA">CARNE EXTRANJERIA</option>
+                <option value="RUC">RUC</option>
+              </select>
+            </div>
+            <div class="col-md-7">
+              <label class="label-sy">Número de documento</label>
+              <input [(ngModel)]="personaSeleccionada.documento" name="doc" class="input-sy mono" required>
+            </div>
+            <div class="col-md-6">
+              <label class="label-sy">Nombre</label>
+              <input [(ngModel)]="personaSeleccionada.nombre" name="nombre" class="input-sy" required>
+            </div>
+            <div class="col-md-6">
+              <label class="label-sy">Apellido</label>
+              <input [(ngModel)]="personaSeleccionada.apellido" name="apellido" class="input-sy" required>
+            </div>
+          </div>
+
+          <div class="form-section">Contacto y acceso</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="label-sy">Correo electrónico</label>
+              <input type="email" [(ngModel)]="personaSeleccionada.correo" name="correo" class="input-sy" required>
+            </div>
+            <div class="col-md-6">
+              <label class="label-sy">URL de foto</label>
+              <input [(ngModel)]="personaSeleccionada.fotoUrl" name="foto" class="input-sy" placeholder="https://...">
+            </div>
+            <div class="col-md-12">
+              <label class="label-sy">Contraseña</label>
+              <input type="password" [(ngModel)]="personaSeleccionada.clave" name="clave" class="input-sy"
+                     [placeholder]="personaSeleccionada.idPersona ? 'Dejar en blanco para mantener' : '**********'"
+                     [required]="!personaSeleccionada.idPersona">
+              <div class="hint" *ngIf="personaSeleccionada.idPersona">Si no la modificas, se conserva la contraseña actual.</div>
+            </div>
+          </div>
+
+          <div class="modal-sy-foot">
+            <button type="button" class="btn-sy btn-sy-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn-sy btn-sy-primary" [disabled]="guardando || f.invalid">
+              {{ guardando ? 'Procesando...' : 'Guardar datos' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

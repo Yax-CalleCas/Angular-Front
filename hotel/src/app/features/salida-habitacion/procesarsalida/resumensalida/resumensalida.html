@@ -1,0 +1,79 @@
+<div class="comprobante-container container mt-4" *ngIf="datos() as d; else cargando">
+
+  <div id="print-area" class="card shadow-sm p-4 border-0">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <div>
+        <h2 class="titulo-comprobante">Comprobante de Salida</h2>
+        <p class="text-muted">N° Recepción: <span class="fw-bold">{{ d.idRecepcion }}</span></p>
+      </div>
+      <div class="text-end">
+        <h4 class="brand-name">Hotel Cibertec</h4>
+        <p class="small text-muted">Piura, Perú</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="row mb-4">
+      <div class="col-sm-6">
+        <div class="info-box">
+          <h6 class="section-title">Datos del Cliente</h6>
+          <p><strong>Cliente:</strong> {{ d.nombre }} {{ d.apellido }}</p>
+          <p><strong>Documento:</strong> {{ d.documento }}</p>
+        </div>
+      </div>
+      <div class="col-sm-6 text-sm-end">
+        <div class="info-box">
+          <h6 class="section-title">Detalles de Estancia</h6>
+          <p><strong>Habitación:</strong> {{ d.numero }}</p>
+          <p><strong>Entrada:</strong> {{ d.fechaEntrada | date:'dd/MM/yyyy' }}</p>
+          <p><strong>Salida:</strong> {{ fechaSalidaCalculada | date:'dd/MM/yyyy' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <h6 class="section-title mb-3">Resumen de Consumos</h6>
+    <table class="table table-hover align-middle mb-4">
+      <thead class="table-light">
+        <tr>
+          <th>Producto</th>
+          <th class="text-center">Cant.</th>
+          <th class="text-end">P. Unit</th>
+          <th class="text-end">SubTotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of servicios()">
+          <td>{{ s.producto }}</td>
+          <td class="text-center">{{ s.cantidad }}</td>
+          <td class="text-end">S/ {{ s.precioUnitario | number:'1.2-2' }}</td>
+          <td class="text-end">S/ {{ s.subTotal | number:'1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="row justify-content-end">
+      <div class="col-md-5">
+        <ul class="list-unstyled totals-list">
+          <li><span>Precio Habitación:</span> <strong>S/ {{ d.precioInicial | number:'1.2-2' }}</strong></li>
+          <li><span>Adelanto:</span> <strong class="text-danger">- S/ {{ d.adelanto | number:'1.2-2' }}</strong></li>
+          <li><span>Penalidad:</span> <strong>S/ {{ d.costoPenalidad | number:'1.2-2' }}</strong></li>
+          <li><span>Consumos:</span> <strong>S/ {{ calcularTotalConsumos() | number:'1.2-2' }}</strong></li>
+          <li class="grand-total"><span>TOTAL A PAGAR:</span> <strong>S/ {{ calcularTotalFinal() | number:'1.2-2' }}</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center mt-4 no-print">
+    <button class="btn btn-outline-secondary me-2" routerLink="/admin/reportes">Ir A reportes</button>
+    <button class="btn btn-primary" (click)="imprimir()">Imprimir Comprobante</button>
+  </div>
+</div>
+
+<ng-template #cargando>
+  <div class="text-center mt-5" *ngIf="isLoading()">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p>Cargando comprobante...</p>
+  </div>
+</ng-template>

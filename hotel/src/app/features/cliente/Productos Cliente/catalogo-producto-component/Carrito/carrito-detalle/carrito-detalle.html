@@ -1,0 +1,54 @@
+<div class="container py-4">
+  <h3 class="mb-4">Tu Carrito</h3>
+
+  <div *ngIf="carritoItems.length === 0" class="alert alert-info">
+    Tu carrito está vacío. ¡Agrega algunos productos!
+  </div>
+
+  <div class="row" *ngIf="carritoItems.length > 0">
+    <div class="col-lg-8">
+      <div class="card mb-3" *ngFor="let item of carritoItems; trackBy: trackById">
+        <div class="row g-0 p-2">
+          <div class="col-md-2">
+            <img [src]="item.imagenUrl" class="img-fluid rounded" alt="Producto" loading="lazy">
+          </div>
+          <div class="col-md-10 d-flex align-items-center justify-content-between px-3">
+            <div>
+              <h5>{{ item.nombreProducto }}</h5>
+              <p class="mb-0">Cantidad: {{ item.cantidad }}</p>
+              <small class="text-muted">Precio unitario: {{ item.precioUnitario | currency }}</small>
+            </div>
+            <div class="text-end">
+              <h5 class="text-primary">{{ (toNumber(item.precioUnitario) * item.cantidad) | currency }}</h5>
+              <button class="btn btn-outline-danger btn-sm"
+                      (click)="eliminarDelCarrito(item.idProducto)"
+                      [disabled]="isProcessing">
+                <i class="bi bi-trash"></i> Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card p-3 bg-light">
+        <h4>Resumen</h4>
+        <hr>
+        <div class="d-flex justify-content-between mb-4">
+          <span>Total a pagar:</span>
+          <strong class="fs-4">{{ calcularTotal() | currency }}</strong>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button class="btn btn-warning" (click)="procesarPedido('PENDIENTE')" [disabled]="isProcessing">
+            {{ isProcessing ? 'Procesando...' : 'Registrar como Pendiente' }}
+          </button>
+          <button class="btn btn-success" (click)="procesarPedido('PAGADO')" [disabled]="isProcessing">
+            {{ isProcessing ? 'Procesando...' : 'Pagar Pedido' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,103 @@
+<div class="container-fluid py-5 px-4">
+
+  <!-- Encabezado -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold text-primary mb-1">
+        <i class="bi bi-door-open-fill me-2"></i>
+        Habitaciones Disponibles
+      </h2>
+      <small class="text-muted">
+        Selecciona una habitación para realizar tu reserva.
+      </small>
+    </div>
+
+    <span class="badge bg-primary fs-6 px-3 py-2">
+      {{ habitaciones.length }} habitaciones
+    </span>
+  </div>
+
+  <!-- Cargando -->
+  <div *ngIf="cargando" class="text-center py-5">
+    <div class="spinner-border text-primary"></div>
+    <p class="mt-3">Cargando habitaciones...</p>
+  </div>
+
+  <!-- Sin datos -->
+  <div
+    *ngIf="!cargando && habitaciones.length === 0"
+    class="alert alert-warning text-center">
+
+    No existen habitaciones disponibles.
+
+  </div>
+
+  <!-- Habitaciones -->
+  <div
+    class="row g-4"
+    *ngIf="!cargando && habitaciones.length > 0">
+
+    <div
+      class="col-md-4"
+      *ngFor="let h of habitaciones; trackBy: trackByHabitacion">
+
+      <div class="card shadow-sm h-100">
+
+        <img
+          [src]="h.urlsImagenes?.[0] ?? 'assets/img/default-room.jpg'"
+          class="card-img-top"
+          alt="Habitación">
+
+        <div class="card-body d-flex flex-column">
+
+          <h5 class="fw-bold">
+            Habitación {{ h.numero }}
+          </h5>
+
+          <p class="text-muted">
+            {{ h.detalle }}
+          </p>
+
+          <p>
+            <strong>Categoría:</strong>
+            {{ h.categoriaNombre }}
+          </p>
+
+          <h4 class="text-primary">
+            {{ h.precio | currency:'USD' }}
+          </h4>
+
+          <span
+            class="badge mb-3"
+            [class.bg-success]="(h.estadoDescripcion || '').toUpperCase() === 'DISPONIBLE'"
+            [class.bg-danger]="(h.estadoDescripcion || '').toUpperCase() !== 'DISPONIBLE'">
+
+            {{ h.estadoDescripcion }}
+
+          </span>
+
+          <!-- Temporal para depuración -->
+          <small class="text-muted">
+            ID: {{ h.idHabitacion }}
+          </small>
+
+          <button
+            type="button"
+            class="btn btn-primary mt-auto"
+            [disabled]="!h.idHabitacion"
+            (click)="abrirDetalle(h.idHabitacion!)">
+
+            <i class="bi bi-calendar-check me-2"></i>
+            Reservar
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,200 @@
+<div class="cat-page">
+
+  <!-- ================= CATEGORÍAS ================= -->
+  <section class="cat-section" aria-labelledby="titulo-categorias">
+    <header class="cat-header">
+      <div>
+        <h2 class="cat-title" id="titulo-categorias">Categorías</h2>
+        <p class="cat-subtitle">Los tipos de habitación que ofreces, como Ejecutiva o Doble familiar.</p>
+      </div>
+      <button type="button" class="btn-sy btn-sy-primary" (click)="abrirCategoria()">
+        Nueva categoría
+      </button>
+    </header>
+
+    <div class="cat-panel">
+      <div class="table-responsive">
+        <table class="cat-table">
+          <thead>
+            <tr>
+              <th scope="col" class="col-id">ID</th>
+              <th scope="col">Descripción</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of categorias; track c.idCategoria) {
+              <tr [class.is-archived]="!c.estado">
+                <td class="cat-id">{{ c.idCategoria }}</td>
+                <td class="cat-desc">{{ c.descripcion }}</td>
+                <td>
+                  <span class="estado-pill" [class.is-ok]="c.estado">
+                    <span class="dot"></span>{{ c.estado ? 'Activa' : 'Inactiva' }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <div class="cat-actions">
+                    <button type="button" class="btn-sy btn-sy-secondary btn-sy-sm"
+                            (click)="abrirCategoria(c)"
+                            [attr.aria-label]="'Editar categoría ' + c.descripcion">Editar</button>
+                    <button type="button" class="btn-sy btn-sy-danger btn-sy-sm"
+                            (click)="eliminarCategoria(c.idCategoria)"
+                            [attr.aria-label]="'Dar de baja la categoría ' + c.descripcion">Dar de baja</button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="cat-state">
+                  Aún no hay categorías. Usa "Nueva categoría" para crear la primera.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="cat-footer">{{ categorias.length }} registros</footer>
+    </div>
+  </section>
+
+  <!-- ================= ESTADOS DE HABITACIÓN ================= -->
+  <section class="cat-section" aria-labelledby="titulo-estados">
+    <header class="cat-header">
+      <div>
+        <h2 class="cat-title" id="titulo-estados">Estados de habitación</h2>
+        <p class="cat-subtitle">Cómo se encuentra cada habitación: Disponible, Ocupado o Mantenimiento.</p>
+      </div>
+      <button type="button" class="btn-sy btn-sy-primary" (click)="abrirEstado()">
+        Nuevo estado
+      </button>
+    </header>
+
+    <div class="cat-panel">
+      <div class="table-responsive">
+        <table class="cat-table">
+          <thead>
+            <tr>
+              <th scope="col" class="col-id">ID</th>
+              <th scope="col">Descripción</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of estados; track e.idEstadoHabitacion) {
+              <tr [class.is-archived]="!e.estado">
+                <td class="cat-id">{{ e.idEstadoHabitacion }}</td>
+                <td class="cat-desc">{{ e.descripcion }}</td>
+                <td>
+                  <span class="estado-pill" [class.is-ok]="e.estado">
+                    <span class="dot"></span>{{ e.estado ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <div class="cat-actions">
+                    <button type="button" class="btn-sy btn-sy-secondary btn-sy-sm"
+                            (click)="abrirEstado(e)"
+                            [attr.aria-label]="'Editar estado ' + e.descripcion">Editar</button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="cat-state">
+                  Aún no hay estados. Usa "Nuevo estado" para crear el primero.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="cat-footer">{{ estados.length }} registros</footer>
+    </div>
+  </section>
+
+</div>
+
+<!-- ================= MODAL DE CATEGORÍA ================= -->
+<div class="modal fade" id="modalCat" tabindex="-1" aria-labelledby="modalCatTitulo" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content sy-modal">
+      <div class="sy-modal-header">
+        <h3 class="sy-modal-title" id="modalCatTitulo">
+          {{ categoria.idCategoria ? 'Editar categoría' : 'Nueva categoría' }}
+        </h3>
+        <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModalCategoria()"></button>
+      </div>
+
+      <form #fc="ngForm" (ngSubmit)="guardarCategoria()" novalidate>
+        <div class="sy-modal-body">
+          <label for="catDescripcion" class="sy-label">Descripción <span class="req">*</span></label>
+          <input id="catDescripcion" name="descripcion" type="text" class="sy-input" required minlength="3"
+                 placeholder="Ej. Ejecutiva" [(ngModel)]="categoria.descripcion" />
+          <p class="sy-hint">Mínimo 3 caracteres.</p>
+
+          @if ((categoria.idCategoria ?? 0) > 0) {
+            <div class="form-check form-switch sy-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="estadoCheckCat"
+                     name="estado" [(ngModel)]="categoria.estado" />
+              <label class="form-check-label" for="estadoCheckCat">Categoría activa</label>
+            </div>
+          }
+        </div>
+
+        <div class="sy-modal-footer">
+          <button type="button" class="btn-sy btn-sy-secondary" (click)="cerrarModalCategoria()">Cancelar</button>
+          <button type="submit" class="btn-sy btn-sy-primary" [disabled]="!fc.valid || isProcessingCategoria">
+            @if (isProcessingCategoria) {
+              <span class="sy-spinner" aria-hidden="true"></span> Guardando...
+            } @else {
+              Guardar categoría
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL DE ESTADO DE HABITACIÓN ================= -->
+<div class="modal fade" id="modalEstado" tabindex="-1" aria-labelledby="modalEstadoTitulo" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content sy-modal">
+      <div class="sy-modal-header">
+        <h3 class="sy-modal-title" id="modalEstadoTitulo">
+          {{ estadoHabitacion.idEstadoHabitacion ? 'Editar estado' : 'Nuevo estado de habitación' }}
+        </h3>
+        <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModalEstado()"></button>
+      </div>
+
+      <form #fe="ngForm" (ngSubmit)="guardarEstado()" novalidate>
+        <div class="sy-modal-body">
+          <label for="estDescripcion" class="sy-label">Descripción <span class="req">*</span></label>
+          <input id="estDescripcion" name="descripcion" type="text" class="sy-input" required
+                 placeholder="Ej. Disponible, Ocupado, Mantenimiento"
+                 [(ngModel)]="estadoHabitacion.descripcion" />
+
+          @if ((estadoHabitacion.idEstadoHabitacion) > 0) {
+            <div class="form-check form-switch sy-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="estadoCheckEst"
+                     name="estado" [(ngModel)]="estadoHabitacion.estado" />
+              <label class="form-check-label" for="estadoCheckEst">Estado activo</label>
+            </div>
+          }
+        </div>
+
+        <div class="sy-modal-footer">
+          <button type="button" class="btn-sy btn-sy-secondary" (click)="cerrarModalEstado()">Cancelar</button>
+          <button type="submit" class="btn-sy btn-sy-primary" [disabled]="!fe.valid || isProcessingEstado">
+            @if (isProcessingEstado) {
+              <span class="sy-spinner" aria-hidden="true"></span> Guardando...
+            } @else {
+              Guardar estado
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

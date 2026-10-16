@@ -1,0 +1,93 @@
+<div class="container-fluid p-4">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h2 class="card-title mb-4"><i class="bi bi-graph-up-arrow"></i> Reportes del Hotel</h2>
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">Fecha Inicio</label>
+          <input type="datetime-local" class="form-control" [ngModel]="fechaInicio()" (ngModelChange)="fechaInicio.set($event)">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Fecha Fin</label>
+          <input type="datetime-local" class="form-control" [ngModel]="fechaFin()" (ngModelChange)="fechaFin.set($event)">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Tipo de Reporte</label>
+          <select class="form-select" [ngModel]="tipoReporte()" (ngModelChange)="cambiarTipo($event)">
+            <option value="ventas">Ventas</option>
+            <option value="cobros">Cobros</option>
+            <option value="ocupacion">Ocupación</option>
+          </select>
+        </div>
+<div class="col-md-3 d-flex gap-2">
+  <button type="button" class="btn btn-primary flex-grow-1" (click)="generarReporte()" [disabled]="isLoading()">
+    <i class="bi" [ngClass]="isLoading() ? 'bi-hourglass-split' : 'bi-arrow-clockwise'"></i>
+    {{ isLoading() ? 'Procesando...' : 'Actualizar' }}
+  </button>
+
+  <button type="button" class="btn btn-success" (click)="exportarExcel()" [disabled]="isLoading() || resultados().length === 0" title="Exportar Excel">
+    <i class="bi bi-file-earmark-excel"></i>
+  </button>
+
+  <button type="button" class="btn btn-danger" (click)="exportarPDF()" [disabled]="isLoading() || resultados().length === 0" title="Exportar PDF">
+    <i class="bi bi-file-earmark-pdf"></i>
+  </button>
+</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage()" class="alert alert-danger alert-dismissible fade show">
+    <i class="bi bi-exclamation-triangle-fill"></i> {{ errorMessage() }}
+  </div>
+
+  <div class="card shadow-sm" *ngIf="!isLoading() && resultados().length > 0">
+    <div class="table-responsive">
+      <table class="table table-hover table-striped align-middle mb-0">
+        <thead class="table-primary">
+          <tr [ngSwitch]="tipoReporte()">
+            <ng-container *ngSwitchCase="'ventas'">
+              <th>Producto</th><th>Cantidad</th><th>Subtotal</th>
+            </ng-container>
+            <ng-container *ngSwitchCase="'cobros'">
+              <th>Habitación</th><th>Cliente</th><th>Alojamiento</th><th>Consumos</th><th>Total</th><th>Fecha</th>
+            </ng-container>
+            <ng-container *ngSwitchCase="'ocupacion'">
+              <th>Habitación</th><th>Categoría</th><th>Veces Alquilada</th>
+            </ng-container>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of resultados()">
+            <ng-container [ngSwitch]="tipoReporte()">
+              <ng-container *ngSwitchCase="'ventas'">
+                <td>{{ item.nombreProducto }}</td>
+                <td>{{ item.cantidadTotal }}</td>
+                <td>{{ item.totalIngresado | currency:'PEN':'symbol' }}</td>
+              </ng-container>
+              <ng-container *ngSwitchCase="'cobros'">
+                <td><span class="badge bg-secondary">{{ item.numeroHabitacion }}</span></td>
+                <td>{{ item.nombreCliente }}</td>
+                <td>{{ item.totalAlojamiento | currency:'PEN':'symbol' }}</td>
+                <td>{{ item.totalConsumos | currency:'PEN':'symbol' }}</td>
+                <td class="fw-bold text-primary">{{ item.totalGeneral | currency:'PEN':'symbol' }}</td>
+                <td>{{ item.fechaCierre | date:'short' }}</td>
+              </ng-container>
+              <ng-container *ngSwitchCase="'ocupacion'">
+                <td>{{ item.numeroHabitacion }}</td>
+                <td>{{ item.descripcionCategoria }}</td>
+                <td>{{ item.vecesAlquilada }}</td>
+              </ng-container>
+            </ng-container>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card mt-3 bg-light border-0" *ngIf="!isLoading() && tipoReporte() !== 'ocupacion' && resultados().length > 0">
+    <div class="card-body text-end">
+      <h4 class="mb-0">Total Recaudado: <span class="text-success">{{ totalGeneral() | currency:'PEN':'symbol' }}</span></h4>
+    </div>
+  </div>
+</div>

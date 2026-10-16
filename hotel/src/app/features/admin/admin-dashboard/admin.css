@@ -1,0 +1,27 @@
+.stat-card {
+  padding: 1.25rem !important;
+  border: 0;
+  border-left: 5px solid;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.border-blue { border-color: #4361ee; }
+.border-red { border-color: #ef4444; }
+.border-yellow { border-color: #f59e0b; }
+.border-green { border-color: #10b981; }
+
+.stat-card h4 {
+  font-size: 1.5rem;
+  letter-spacing: -0.025em;
+}
+
+.stat-card .small {
+  letter-spacing: 0.05em;
+}

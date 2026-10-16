@@ -1,0 +1,19 @@
+.room-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+}
+
+.room-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 1rem 2rem rgba(220, 53, 69, 0.15) !important;
+}
+
+.badge {
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+.form-select:focus {
+  border-color: #f1f1f1;
+  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.1);
+}

@@ -1,0 +1,258 @@
+/* =================================================================
+   SISTEMA DE DISEÑO: SILLAR Y TINTA (LOGIN COMPONENT STYLES)
+   ================================================================= */
+:host {
+  --color-sillar-blanco: #F8F7F4;
+  --color-sillar-piedra: #EFEDE6;
+  --color-junta: #DCD8CC;
+  --color-garua: #6E6A61;
+  --color-tinta: #26231F;
+  --color-cochinilla: #8A1E33;
+  --color-cochinilla-hover: #701829;
+  --color-cochinilla-pressed: #5C1421;
+  --color-azul-noche: #202B3A;
+  --color-error: #B3261E;
+  --color-error-bg: #FCEBE9;
+
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  color: var(--color-tinta);
+  display: block;
+  min-height: 100vh;
+}
+
+.login-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  background-color: var(--color-sillar-blanco);
+}
+
+@media (max-width: 960px) {
+  .login-container {
+    grid-template-columns: 1fr;
+  }
+  .login-brand-banner {
+    display: none;
+  }
+}
+
+/* -----------------------------------------------------------------
+   PANEL IZQUIERDO: BANNER FOTOGRÁFICO / EDITORIAL (AZUL NOCHE)
+   ----------------------------------------------------------------- */
+.login-brand-banner {
+  background-color: var(--color-azul-noche);
+  color: #F1F0EC;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-brand-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(138, 30, 51, 0.3), transparent 65%);
+  pointer-events: none;
+}
+
+.brand-content {
+  position: relative;
+  z-index: 2;
+  max-width: 460px;
+}
+
+.brand-subtitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #D7A3AE;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.login-brand-banner h1 {
+  font-family: 'Marcellus', 'Times New Roman', serif;
+  font-size: 3rem;
+  line-height: 1.12;
+  margin: 0 0 1.25rem 0;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.login-brand-banner p {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #C2C6CD;
+  margin: 0;
+}
+
+/* -----------------------------------------------------------------
+   PANEL DERECHO: TARJETA DE ACCESO
+   ----------------------------------------------------------------- */
+.login-card-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: var(--color-sillar-blanco);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-sillar-blanco);
+  padding: 2.5rem;
+  border: 1px solid var(--color-junta);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(38, 35, 31, 0.04);
+}
+
+.login-header {
+  margin-bottom: 2rem;
+}
+
+.login-header h2 {
+  font-family: 'Marcellus', 'Times New Roman', serif;
+  font-size: 1.75rem;
+  font-weight: 400;
+  color: var(--color-tinta);
+  margin: 0 0 0.5rem 0;
+}
+
+.login-header p {
+  font-size: 0.875rem;
+  color: var(--color-garua);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* -----------------------------------------------------------------
+   ALERTAS DE ERROR (CATÁLOGO TÉCNICO)
+   ----------------------------------------------------------------- */
+.alert-danger {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: var(--color-error-bg);
+  border-left: 3px solid var(--color-error);
+  color: var(--color-error);
+  padding: 0.875rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.error-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--color-error);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* -----------------------------------------------------------------
+   FORMULARIO Y CAMPOS
+   ----------------------------------------------------------------- */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-group label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-tinta);
+  text-transform: lowercase; /* Regla de estricta minúscula de oración */
+}
+
+.form-group input {
+  height: 44px;
+  padding: 0 0.875rem;
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-junta);
+  border-radius: 4px;
+  font-size: 0.9375rem;
+  color: var(--color-tinta);
+  font-family: inherit;
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.form-group input::placeholder {
+  color: #A8A39A;
+}
+
+.form-group input:focus-visible {
+  outline: none;
+  border-color: var(--color-cochinilla);
+  box-shadow: 0 0 0 3px #F7E9EC;
+}
+
+.form-group input.input-error {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px var(--color-error-bg);
+}
+
+.error-text {
+  font-size: 0.75rem;
+  color: var(--color-error);
+  margin-top: 0.125rem;
+}
+
+/* -----------------------------------------------------------------
+   BOTÓN PRIMARIO CARMÍN COCHINILLA
+   ----------------------------------------------------------------- */
+.btn-primary {
+  margin-top: 0.75rem;
+  height: 46px;
+  background-color: var(--color-cochinilla);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-cochinilla-hover);
+}
+
+.btn-primary:active:not(:disabled) {
+  background-color: var(--color-cochinilla-pressed);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* -----------------------------------------------------------------
+   PIE DE PÁGINA DE LA TARJETA
+   ----------------------------------------------------------------- */
+.login-footer-note {
+  margin-top: 2rem;
+  text-align: center;
+  border-top: 1px solid var(--color-sillar-piedra);
+  padding-top: 1.25rem;
+}
+
+.login-footer-note p {
+  font-size: 0.75rem;
+  color: var(--color-garua);
+  margin: 0;
+  text-transform: lowercase;
+}
