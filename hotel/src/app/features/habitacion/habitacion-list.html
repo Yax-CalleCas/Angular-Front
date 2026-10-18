@@ -45,7 +45,7 @@
           <p class="text-garua text-xs mt-2 mb-0">Sincronizando habitaciones...</p>
         </div>
       } @else {
-        <!-- Tabla de Datos -->
+       <!-- Tabla de Datos -->
         <div class="table-responsive rounded border border-junta bg-white">
           <table class="table table-hover align-middle mb-0 text-xs">
             <thead class="bg-sillar-piedra text-tinta border-bottom border-junta">
@@ -65,20 +65,20 @@
                   <!-- Número -->
                   <td class="px-3 py-3 font-mono fw-bold text-tinta fs-6">{{ h.numero }}</td>
 
-                  <!-- Categoría -->
+                  <!-- Categoría (Objeto anidado) -->
                   <td class="px-3 py-3">
                     <span class="badge bg-sillar-piedra text-tinta border border-junta fw-normal px-2 py-1">
-                      {{ h.categoriaDesc || 'N/A' }}
+                     {{ h.categoria.descripcion || 'N/A' }}
                     </span>
                   </td>
 
-                  <!-- Piso -->
-                  <td class="px-3 py-3 text-garua">{{ h.pisoDesc || 'N/A' }}</td>
+                  <!-- Piso (Objeto anidado) -->
+                  <td class="px-3 py-3 text-garua">{{ h.piso?.descripcion || 'N/A' }}</td>
 
-                  <!-- Estado (descripción calculada en el componente a partir de idEstadoHabitacion) -->
+                  <!-- Estado (Objeto anidado estadoHabitacion) -->
                   <td class="px-3 py-3">
-                    <span [class]="'badge rounded-pill fw-medium px-2.5 py-1 ' + getEstadoBadgeClass(h.estadoHabitacionDesc || '')">
-                      {{ h.estadoHabitacionDesc || 'N/A' }}
+                    <span [class]="'badge rounded-pill fw-medium px-2.5 py-1 ' + getEstadoBadgeClass(h.estadoHabitacion.descripcion)">
+                      {{ h.estadoHabitacion.descripcion || 'N/A' }}
                     </span>
                   </td>
 
@@ -87,10 +87,10 @@
                     S/ {{ h.precio | number:'1.2-2' }}
                   </td>
 
-                  <!-- Fotos -->
+                  <!-- Fotos (Lista de imágenes) -->
                   <td class="px-3 py-3 text-center">
                     <span class="badge bg-sillar-piedra text-garua rounded-circle px-2 py-1 font-mono">
-                      {{ h.urlsImagenes?.length || 0 }}
+                      {{ h.imagenes.length || 0 }}
                     </span>
                   </td>
 
@@ -133,6 +133,8 @@
           </table>
         </div>
 
+
+
         <!-- Paginación -->
         @if (totalPaginas() > 1) {
           <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top border-junta text-xs text-garua">
@@ -170,7 +172,7 @@
 
       <div class="modal-header bg-sillar-piedra border-bottom border-junta py-3 px-4">
         <h5 id="modalHabitacionTitulo" class="modal-title fw-bold font-display text-tinta fs-5">
-          {{ habitacion().idHabitacion ? 'Editar Habitación' : 'Nueva Habitación' }}
+          {{ idHabitacionEditando() ? 'Editar Habitación' : 'Nueva Habitación' }}
         </h5>
         <button type="button" class="btn-close shadow-none" (click)="cerrarModal()" aria-label="Cerrar"></button>
       </div>
@@ -182,19 +184,19 @@
             <!-- Número -->
             <div class="col-md-6">
               <label for="habNumero" class="form-label fw-semibold text-tinta">Número <span class="text-cochinilla">*</span></label>
-              <input id="habNumero" type="text" class="form-control text-xs border-junta shadow-none" required name="numero" [(ngModel)]="habitacion().numero" placeholder="Ej. 101" />
+              <input id="habNumero" type="text" class="form-control text-xs border-junta shadow-none" required name="numero" [ngModel]="habitacionForm().numero" (ngModelChange)="habitacionForm.update(f => ({...f, numero: $event}))" placeholder="Ej. 101" />
             </div>
 
             <!-- Precio -->
             <div class="col-md-6">
               <label for="habPrecio" class="form-label fw-semibold text-tinta">Precio / Noche (S/) <span class="text-cochinilla">*</span></label>
-              <input id="habPrecio" type="number" class="form-control text-xs border-junta shadow-none" required min="1" step="0.01" name="precio" [(ngModel)]="habitacion().precio" />
+              <input id="habPrecio" type="number" class="form-control text-xs border-junta shadow-none" required min="1" step="0.01" name="precio" [ngModel]="habitacionForm().precio" (ngModelChange)="habitacionForm.update(f => ({...f, precio: $event}))" />
             </div>
 
             <!-- Categoría -->
             <div class="col-md-6">
               <label for="habCategoria" class="form-label fw-semibold text-tinta">Categoría <span class="text-cochinilla">*</span></label>
-              <select id="habCategoria" class="form-select text-xs border-junta shadow-none" required name="idCategoria" [(ngModel)]="habitacion().idCategoria">
+              <select id="habCategoria" class="form-select text-xs border-junta shadow-none" required name="idCategoria" [ngModel]="habitacionForm().idCategoria" (ngModelChange)="habitacionForm.update(f => ({...f, idCategoria: +$event}))">
                 <option [ngValue]="null" disabled>Seleccione categoría</option>
                 @for (c of categorias(); track c.idCategoria) {
                   <option [ngValue]="c.idCategoria">{{ c.descripcion }}</option>
@@ -205,7 +207,7 @@
             <!-- Piso -->
             <div class="col-md-6">
               <label for="habPiso" class="form-label fw-semibold text-tinta">Piso <span class="text-cochinilla">*</span></label>
-              <select id="habPiso" class="form-select text-xs border-junta shadow-none" required name="idPiso" [(ngModel)]="habitacion().idPiso">
+              <select id="habPiso" class="form-select text-xs border-junta shadow-none" required name="idPiso" [ngModel]="habitacionForm().idPiso" (ngModelChange)="habitacionForm.update(f => ({...f, idPiso: +$event}))">
                 <option [ngValue]="null" disabled>Seleccione piso</option>
                 @for (p of pisos(); track p.idPiso) {
                   <option [ngValue]="p.idPiso">{{ p.descripcion }}</option>
@@ -216,7 +218,7 @@
             <!-- Estado operativo -->
             <div class="col-md-6">
               <label for="habEstado" class="form-label fw-semibold text-tinta">Estado Operativo <span class="text-cochinilla">*</span></label>
-              <select id="habEstado" class="form-select text-xs border-junta shadow-none" required name="idEstadoHabitacion" [(ngModel)]="habitacion().idEstadoHabitacion">
+              <select id="habEstado" class="form-select text-xs border-junta shadow-none" required name="idEstadoHabitacion" [ngModel]="habitacionForm().idEstadoHabitacion" (ngModelChange)="habitacionForm.update(f => ({...f, idEstadoHabitacion: +$event}))">
                 <option [ngValue]="null" disabled>Seleccione estado</option>
                 @for (est of estados(); track est.idEstadoHabitacion) {
                   <option [ngValue]="est.idEstadoHabitacion">{{ est.descripcion }}</option>
@@ -227,18 +229,18 @@
             <!-- Detalles -->
             <div class="col-12">
               <label for="habDetalle" class="form-label fw-semibold text-tinta">Detalles</label>
-              <textarea id="habDetalle" class="form-control text-xs border-junta shadow-none" rows="2" name="detalle" [(ngModel)]="habitacion().detalle" placeholder="Ej. Vista a la calle, Cama King..."></textarea>
+              <textarea id="habDetalle" class="form-control text-xs border-junta shadow-none" rows="2" name="detalle" [ngModel]="habitacionForm().detalle" (ngModelChange)="habitacionForm.update(f => ({...f, detalle: $event}))" placeholder="Ej. Vista a la calle, Cama King..."></textarea>
             </div>
 
             <!-- Galería de Fotos -->
             <div class="col-12 mt-3">
               <div class="form-label fw-semibold d-flex justify-content-between text-tinta">
                 <span>Fotografías (Máx. {{ maxImagenes }})</span>
-                <span class="text-garua font-mono">{{ habitacion().urlsImagenes?.length || 0 }} / {{ maxImagenes }}</span>
+                <span class="text-garua font-mono">{{ habitacionForm().urlsImagenes?.length || 0 }} / {{ maxImagenes }}</span>
               </div>
 
               <div class="d-flex flex-wrap gap-2 mb-2">
-                @for (imgUrl of habitacion().urlsImagenes || []; track $index) {
+                @for (imgUrl of habitacionForm().urlsImagenes || []; track $index) {
                   <div class="position-relative border border-junta rounded overflow-hidden bg-white shadow-sm" style="width: 85px; height: 85px;">
                     <img [src]="imgUrl" class="w-100 h-100 object-fit-cover" [alt]="'Foto ' + ($index + 1) + ' de la habitación'" />
                     <button
@@ -252,7 +254,7 @@
                   </div>
                 }
 
-                @if ((habitacion().urlsImagenes?.length || 0) < maxImagenes) {
+                @if ((habitacionForm().urlsImagenes?.length || 0) < maxImagenes) {
                   <label class="border border-2 border-dashed border-junta rounded d-flex flex-column align-items-center justify-content-center text-garua bg-white cursor-pointer hover:bg-sillar-piedra transition-all" style="width: 85px; height: 85px;">
                     <i class="bi bi-camera fs-4 mb-1" aria-hidden="true"></i>
                     <span style="font-size: 10px;" class="fw-medium">Subir foto</span>

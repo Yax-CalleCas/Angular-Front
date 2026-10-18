@@ -1,3 +1,5 @@
+
+
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,7 +17,7 @@ import { PersonaService } from '../../../core/services/persona.service';
 import { CategoriaService } from '../../../core/services/categoria.service';
 import { PisoService } from '../../../core/services/piso.service';
 import { EstadoHabitacionService } from '../../../core/services/EstadoHabitacionService';
-import { Habitacion } from '../../../core/models/Habitacion';
+import { HabitacionResponseDTO, HabitacionRequestDTO } from '../../../core/models/Habitacion';
 import { Persona } from '../../../core/models/persona.model';
 import { Recepcion } from '../../../core/models/recepcion.model';
 
@@ -38,7 +40,7 @@ export class RecepcionDetalleComponent implements OnInit {
   private readonly pisoService = inject(PisoService);
   private readonly estService = inject(EstadoHabitacionService);
 
-  habitacion = signal<Habitacion | null>(null);
+  habitacion = signal<HabitacionResponseDTO | null>(null);
   recepcion = signal<Recepcion>(this.inicializarModelo());
   listaPersonas = signal<Persona[]>([]);
   paginaActual = signal<number>(0);
@@ -55,8 +57,8 @@ export class RecepcionDetalleComponent implements OnInit {
   // Validación robusta corregida y limpia
   esOcupada = computed(() => {
     const hab = this.habitacion();
-    if (!hab || !hab.idEstadoHabitacion) return false;
-    const nombreEstado = (this.estMap().get(Number(hab.idEstadoHabitacion)) || hab.descripcionEstado || '').toLowerCase();
+    if (!hab || !hab.estadoHabitacion) return false;
+    const nombreEstado = (this.estMap().get(Number(hab.estadoHabitacion)) || hab.detalle || '').toLowerCase();
     return nombreEstado.includes('ocupado');
   });
 

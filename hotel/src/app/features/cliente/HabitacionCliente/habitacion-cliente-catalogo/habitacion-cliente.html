@@ -27,9 +27,7 @@
   <div
     *ngIf="!cargando && habitaciones.length === 0"
     class="alert alert-warning text-center">
-
     No existen habitaciones disponibles.
-
   </div>
 
   <!-- Habitaciones -->
@@ -43,9 +41,11 @@
 
       <div class="card shadow-sm h-100">
 
+        <!-- Acceso directo sin ?. redundante -->
         <img
-          [src]="h.urlsImagenes?.[0] ?? 'assets/img/default-room.jpg'"
-          class="card-img-top"
+          [src]="h.imagenes[0]?.urlImagen || 'assets/img/placeholder-room.jpg'"
+          class="card-img-top object-fit-cover"
+          style="height: 200px;"
           alt="Habitación">
 
         <div class="card-body d-flex flex-column">
@@ -54,26 +54,25 @@
             Habitación {{ h.numero }}
           </h5>
 
-          <p class="text-muted">
-            {{ h.detalle }}
+          <p class="text-muted small">
+            {{ h.detalle || 'Sin detalles' }}
           </p>
 
-          <p>
+          <p class="mb-2">
             <strong>Categoría:</strong>
-            {{ h.categoriaNombre }}
+            {{ h.categoria.descripcion || 'N/A' }}
           </p>
 
-          <h4 class="text-primary">
-            {{ h.precio | currency:'USD' }}
+          <h4 class="text-primary font-mono">
+            S/ {{ h.precio | number:'1.2-2' }}
           </h4>
 
+          <!-- Acceso directo sin ?. redundante -->
           <span
-            class="badge mb-3"
-            [class.bg-success]="(h.estadoDescripcion || '').toUpperCase() === 'DISPONIBLE'"
-            [class.bg-danger]="(h.estadoDescripcion || '').toUpperCase() !== 'DISPONIBLE'">
-
-            {{ h.estadoDescripcion }}
-
+            class="badge mb-3 align-self-start"
+            [class.bg-success]="h.estadoHabitacion.descripcion.toUpperCase() === 'DISPONIBLE'"
+            [class.bg-danger]="h.estadoHabitacion.descripcion.toUpperCase() !== 'DISPONIBLE'">
+            {{ h.estadoHabitacion.descripcion || 'N/A' }}
           </span>
 
           <!-- Temporal para depuración -->

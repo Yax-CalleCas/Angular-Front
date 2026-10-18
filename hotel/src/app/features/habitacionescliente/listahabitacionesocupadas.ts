@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, computed, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -7,15 +7,13 @@ import Swal from 'sweetalert2';
 
 import { HabitacionService } from '../../core/services/habitacion.service';
 import { PisoService } from '../../core/services/piso.service';
-import { CategoriaService } from '../../core/services/categoria.service';
-import { EstadoHabitacionService } from '../../core/services/EstadoHabitacionService';
-import { Habitacion } from '../../core/models/Habitacion';
+import { HabitacionResponseDTO } from '../../core/models/Habitacion';
 import { Piso } from '../../core/models/piso';
 
 @Component({
   selector: 'app-listahabitacionesocupadas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DecimalPipe],
   templateUrl: './listahabitacionesocupadas.html',
   styleUrls: ['./listahabitacionesocupadas.css']
 })
@@ -24,22 +22,20 @@ export class ListaHabitacionesEstadoComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pisoService = inject(PisoService);
-  private readonly catService = inject(CategoriaService);
-  private readonly estService = inject(EstadoHabitacionService);
 
-  // Signals
-  habitaciones = signal<Habitacion[]>([]);
+  // Signals utilizando la interfaz correcta HabitacionResponseDTO
+  habitaciones = signal<HabitacionResponseDTO[]>([]);
   pisos = signal<Piso[]>([]);
   idPisoSeleccionado = signal<number>(0);
   estadoFiltro = signal<number>(2);
   isLoading = signal<boolean>(false);
 
-  // Computado para filtrado reactivo
+  // Computado para filtrado reactivo utilizando la relación anidada .piso.idPiso
   readonly habitacionesFiltradas = computed(() => {
     const pId = Number(this.idPisoSeleccionado());
     return pId === 0
       ? this.habitaciones()
-      : this.habitaciones().filter(h => Number(h.idPiso) === pId);
+      : this.habitaciones().filter(h => Number(h.piso?.idPiso) === pId);
   });
 
   ngOnInit(): void {
@@ -50,27 +46,22 @@ export class ListaHabitacionesEstadoComponent implements OnInit {
   private cargarDatos(): void {
     this.isLoading.set(true);
 
+    // Solo cargamos pisos y habitaciones, ya que los DTOs ya traen anidados categoría y estado
     forkJoin({
       pisos: this.pisoService.listar(),
-      habitaciones: this.habService.listar(),
-      categorias: this.catService.listar(),
-      estados: this.estService.listar()
+      habitaciones: this.habService.listar()
     }).subscribe({
-      next: ({ pisos, habitaciones, categorias, estados }) => {
+      next: ({ pisos, habitaciones }) => {
         this.pisos.set(pisos.data ?? []);
 
-        const cats = categorias.data ?? [];
-        const ests = estados.data ?? [];
+        const estadoTarget = this.estadoFiltro();
 
-        // Mapeo enriquecido para el template
-        this.habitaciones.set((habitaciones.data ?? [])
-          .filter(h => Number(h.idEstadoHabitacion) === this.estadoFiltro() && h.estado !== false)
-          .map(h => ({
-            ...h,
-            categoriaNombre: cats.find(c => Number(c.idCategoria) === Number(h.idCategoria))?.descripcion ?? 'Sin categoría',
-            estadoDescripcion: ests.find(e => Number(e.idEstadoHabitacion) === Number(h.idEstadoHabitacion))?.descripcion ?? 'N/A'
-          }))
+        // Filtramos directamente consultando el id del objeto anidado estadoHabitacion
+        const listaFiltrada = (habitaciones.data ?? []).filter(h =>
+          Number(h.estadoHabitacion?.idEstadoHabitacion) === estadoTarget && h.estado !== false
         );
+
+        this.habitaciones.set(listaFiltrada);
         this.isLoading.set(false);
       },
       error: (err) => {
@@ -84,7 +75,7 @@ export class ListaHabitacionesEstadoComponent implements OnInit {
     });
   }
 
-  trackByHabitacion(index: number, h: Habitacion): number {
+  trackByHabitacion(index: number, h: HabitacionResponseDTO): number {
     return h.idHabitacion!;
   }
 
@@ -97,8 +88,8 @@ export class ListaHabitacionesEstadoComponent implements OnInit {
       .then(() => this.router.navigate(['/login']));
   }
 
-onPisoChange(event: Event): void {
-  const selectElement = event.target as HTMLSelectElement;
-  this.idPisoSeleccionado.set(Number(selectElement.value));
-}
+  onPisoChange(event: Event): void {
+    const selectElement = event.target as HTMLSelectElement;
+    this.idPisoSeleccionado.set(Number(selectElement.value));
+  }
 }

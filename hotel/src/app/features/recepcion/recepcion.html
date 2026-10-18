@@ -31,9 +31,9 @@
     <div class="col-12 col-md-6 col-lg-4 col-xl-3" *ngFor="let h of habitacionesFiltradas()">
       <div class="card h-100 shadow-sm border-0 transition-hover"
            [ngClass]="{
-             'border-start border-4 border-success': getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('libre') || getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('disponible'),
-             'border-start border-4 border-danger': getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('ocupado'),
-             'border-start border-4 border-warning': getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('limpieza') || getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('mantenimiento')
+             'border-start border-4 border-success': getEstNombre(h.idHabitacion).toLowerCase().includes('libre') || getEstNombre(h.idHabitacion).toLowerCase().includes('disponible'),
+             'border-start border-4 border-danger': getEstNombre(h.idHabitacion).toLowerCase().includes('ocupado'),
+             'border-start border-4 border-warning': getEstNombre(h.idHabitacion).toLowerCase().includes('limpieza') || getEstNombre(h.idHabitacion).toLowerCase().includes('mantenimiento')
            }">
         <div class="card-body d-flex flex-column">
 
@@ -43,17 +43,17 @@
               <i class="bi bi-door-closed text-primary me-1"></i> Hab. {{ h.numero }}
             </h5>
             <span class="badge" [ngClass]="{
-              'bg-success-subtle text-success': getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('libre') || getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('disponible'),
-              'bg-danger-subtle text-danger': getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('ocupado'),
-              'bg-warning-subtle text-warning text-dark': getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('limpieza') || getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('mantenimiento')
+              'bg-success-subtle text-success': getEstNombre(h.idHabitacion).toLowerCase().includes('libre') || getEstNombre(h.idHabitacion).toLowerCase().includes('disponible'),
+              'bg-danger-subtle text-danger': getEstNombre(h.idHabitacion).toLowerCase().includes('ocupado'),
+              'bg-warning-subtle text-warning text-dark': getEstNombre(h.idHabitacion).toLowerCase().includes('limpieza') || getEstNombre(h.idHabitacion).toLowerCase().includes('mantenimiento')
             }">
-              {{ getEstNombre(h.idEstadoHabitacion) }}
+              {{ getEstNombre(h.idHabitacion) }}
             </span>
           </div>
 
           <!-- Categoría y Precio -->
           <p class="text-muted small mb-1">
-            <i class="bi bi-tag me-1"></i> Categoría: <strong class="text-secondary">{{ getCatNombre(h.idCategoria) }}</strong>
+            <i class="bi bi-tag me-1"></i> Categoría: <strong class="text-secondary">{{ getCatNombre(h.categoria) }}</strong>
           </p>
 
           <p class="text-dark small fw-semibold mb-2">
@@ -62,15 +62,15 @@
 
           <!-- Piso -->
           <p class="text-muted small mb-3 mt-auto">
-            <i class="bi bi-building me-1"></i> Piso ID: {{ h.idPiso }}
+            <i class="bi bi-building me-1"></i> Piso ID: {{ h.piso }}
           </p>
 
           <!-- Botón de Acción Dinámico -->
           <button class="btn btn-sm w-100 mt-2"
-                  [ngClass]="(getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('libre') || getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('disponible')) ? 'btn-primary' : 'btn-danger'"
+                  [ngClass]="(getEstNombre(h.idHabitacion).toLowerCase().includes('libre') || getEstNombre(h.idHabitacion).toLowerCase().includes('disponible')) ? 'btn-primary' : 'btn-danger'"
                   (click)="abrirDetalle(h)">
-            <i class="bi me-1" [ngClass]="(getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('libre') || getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('disponible')) ? 'bi-plus-circle' : 'bi-eye'"></i>
-            {{ (getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('libre') || getEstNombre(h.idEstadoHabitacion).toLowerCase().includes('disponible')) ? 'Registrar Ingreso' : 'Ver Detalle / Salida' }}
+            <i class="bi me-1" [ngClass]="(getEstNombre(h.idHabitacion).toLowerCase().includes('libre') || getEstNombre(h.idHabitacion).toLowerCase().includes('disponible')) ? 'bi-plus-circle' : 'bi-eye'"></i>
+            {{ (getEstNombre(h.idHabitacion).toLowerCase().includes('libre') || getEstNombre(h.idHabitacion).toLowerCase().includes('disponible')) ? 'Registrar Ingreso' : 'Ver Detalle / Salida' }}
           </button>
 
         </div>

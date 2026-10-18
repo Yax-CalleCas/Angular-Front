@@ -12,7 +12,7 @@ import { HabitacionService } from '../../../../../core/services/habitacion.servi
 import { PersonaService } from '../../../../../core/services/persona.service';
 import { RecepcionService } from '../../../../../core/services/recepcion.service';
 
-import { Habitacion } from '../../../../../core/models/Habitacion';
+import { HabitacionResponseDTO } from '../../../../../core/models/Habitacion';
 import { Persona } from '../../../../../core/models/persona.model';
 import { Recepcion } from '../../../../../core/models/recepcion.model';
 
@@ -35,7 +35,7 @@ export class AlquilerComponente implements OnInit {
 
   private readonly cdr = inject(ChangeDetectorRef);
 
-  habitacion: Habitacion | null = null;
+  habitacion: HabitacionResponseDTO | null = null;
   persona: Persona | null = null;
 
   cargando = true;

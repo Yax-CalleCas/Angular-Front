@@ -43,10 +43,12 @@
 
       <div class="card shadow border-0 h-100">
 
-        <img
-          [src]="habitacion.urlsImagenes?.[0] ?? 'assets/img/default-room.jpg'"
-          class="card-img-top"
-          alt="Habitación">
+        <!-- Extracción segura de la primera URL de imagen del DTO -->
+<img
+  [src]="habitacion.imagenes[0]?.urlImagen ?? 'assets/img/default-room.jpg'"
+  class="card-img-top object-fit-cover"
+  style="height: 200px;"
+  alt="Habitación">
 
         <div class="card-body">
 
@@ -54,43 +56,45 @@
             Habitación {{ habitacion.numero }}
           </h4>
 
+          <!-- Categoría anidada -->
           <span class="badge bg-primary mb-3">
-            {{ habitacion.categoriaNombre }}
+            {{ habitacion.categoria?.descripcion || 'N/A' }}
           </span>
 
-          <p class="text-muted">
-            {{ habitacion.detalle }}
+          <p class="text-muted small">
+            {{ habitacion.detalle || 'Sin detalles' }}
           </p>
 
           <hr>
 
+          <!-- Piso anidado -->
           <p>
             <strong>Piso:</strong>
-            {{ habitacion.idPiso }}
+            {{ habitacion.piso?.descripcion || 'N/A' }}
           </p>
 
+          <!-- Estado de habitación anidado -->
           <p>
             <strong>Estado:</strong>
 
-            <span
-              class="badge"
-              [class.bg-success]="habitacion.estadoDescripcion === 'Disponible'"
-              [class.bg-danger]="habitacion.estadoDescripcion !== 'Disponible'">
+       <span
+  class="badge"
+  [class.bg-success]="habitacion.estadoHabitacion.descripcion === 'Disponible'"
+  [class.bg-danger]="habitacion.estadoHabitacion.descripcion !== 'Disponible'">
 
-              {{ habitacion.estadoDescripcion }}
+  {{ habitacion.estadoHabitacion.descripcion || 'N/A' }}
 
-            </span>
-
+</span>
           </p>
 
           <hr>
 
-          <div class="d-flex justify-content-between">
+          <div class="d-flex justify-content-between align-items-center">
 
             <span>Precio por noche</span>
 
-            <strong class="text-success">
-              {{ habitacion.precio | currency:'USD' }}
+            <strong class="text-success font-mono">
+              S/ {{ habitacion.precio | number:'1.2-2' }}
             </strong>
 
           </div>
@@ -178,7 +182,7 @@
 
               <input
                 class="form-control"
-                [value]="habitacion.precio | currency:'USD'"
+                [value]="'S/ ' + (habitacion.precio | number:'1.2-2')"
                 readonly>
 
             </div>
@@ -191,7 +195,7 @@
 
               <input
                 class="form-control fw-bold text-success"
-                [value]="precioTotalCalculado | currency:'USD'"
+                [value]="'S/ ' + (precioTotalCalculado | number:'1.2-2')"
                 readonly>
 
             </div>
@@ -256,7 +260,6 @@
 </div>
 
 <!-- Modal -->
-
 <div
   *ngIf="mostrarModalPago"
   class="modal-overlay">
@@ -290,21 +293,21 @@
 
       <tr>
         <th>Total</th>
-        <td>{{ precioTotalCalculado | currency:'USD' }}</td>
+        <td>S/ {{ precioTotalCalculado | number:'1.2-2' }}</td>
       </tr>
 
       <tr>
         <th>Monto entregado</th>
-        <td>{{ alquilerForm.get('montoPagado')?.value | currency:'USD' }}</td>
+        <td>S/ {{ (alquilerForm.get('montoPagado')?.value || 0) | number:'1.2-2' }}</td>
       </tr>
 
       <tr>
         <th>Saldo pendiente</th>
         <td class="text-danger">
 
-          {{
+          S/ {{
             (precioTotalCalculado - (alquilerForm.get('montoPagado')?.value || 0))
-            | currency:'USD'
+            | number:'1.2-2'
           }}
 
         </td>

@@ -9,9 +9,10 @@ import { EstadoHabitacionService } from '../../core/services/EstadoHabitacionSer
 import { CategoriaService } from '../../core/services/categoria.service';
 import { PisoService } from '../../core/services/piso.service';
 
-import { Habitacion } from '../../core/models/Habitacion';
-
-const ESTADO_BADGE_DEFAULT = 'bg-[#ECECEA] text-[#5B5B5B]';
+import { HabitacionRequestDTO, HabitacionResponseDTO } from '../../core/models/Habitacion';
+import { EstadoHabitacionResponseDTO } from '../../core/models/estado-habitacion.model';
+import { Categoria } from '../../core/models/categoria.model';
+import { Piso } from '../../core/models/piso';
 
 const ERRORES_HTTP: Record<number, { titulo: string; texto: string; icono: SweetAlertIcon }> = {
   409: {
@@ -48,11 +49,14 @@ export class HabitacionListComponent implements OnInit {
   private readonly maxLadoPx = 1280;
   private readonly calidadJpeg = 0.8;
 
-  habitaciones = signal<Habitacion[]>([]);
-  habitacion = signal<Habitacion>(this.nuevoModelo());
-  categorias = signal<any[]>([]);
-  pisos = signal<any[]>([]);
-  estados = signal<any[]>([]);
+  habitaciones = signal<HabitacionResponseDTO[]>([]);
+  habitacionForm = signal<HabitacionRequestDTO>(this.nuevoModeloRequest());
+
+  idHabitacionEditando = signal<number | null>(null);
+
+  categorias = signal<Categoria[]>([]);
+  pisos = signal<Piso[]>([]);
+  estados = signal<EstadoHabitacionResponseDTO[]>([]);
 
   filtroTexto = signal('');
   paginaActual = signal(1);
@@ -64,7 +68,7 @@ export class HabitacionListComponent implements OnInit {
     const filtro = this.filtroTexto().toLowerCase().trim();
     return this.habitaciones().filter(h =>
       h.numero.toLowerCase().includes(filtro) ||
-      h.categoriaDesc?.toLowerCase().includes(filtro)
+      h.categoria?.descripcion?.toLowerCase().includes(filtro)
     );
   });
 
@@ -97,37 +101,37 @@ export class HabitacionListComponent implements OnInit {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: ({ h, e, c, p }) => {
-          const categorias = (c.data || []).filter(x => x.estado);
-          const pisos = (p.data || []).filter(x => x.estado);
-          const estadosList = e.data || [];
-
-          this.estados.set(estadosList);
-          this.categorias.set(categorias);
-          this.pisos.set(pisos);
-
-          const categoriasMap = new Map(categorias.map(x => [x.idCategoria, x.descripcion]));
-          const pisosMap = new Map(pisos.map(x => [x.idPiso, x.descripcion]));
-          const estadosMap = new Map(estadosList.map(x => [x.idEstadoHabitacion, x.descripcion]));
+          this.estados.set(e.data || []);
+          this.categorias.set(((c.data || []) as Categoria[]).filter(x => x.estado));
+          this.pisos.set(((p.data || []) as Piso[]).filter(x => x.estado));
 
           this.habitaciones.set(
-            (h.data || [])
-              .map(item => ({
-                ...item,
-                categoriaDesc: item.categoriaDesc || categoriasMap.get(item.idCategoria) || 'N/A',
-                pisoDesc: item.pisoDesc || pisosMap.get(item.idPiso) || 'N/A',
-                estadoHabitacionDesc: item.estadoHabitacionDesc || estadosMap.get(item.idEstadoHabitacion!) || 'Disponible'
-              }))
-              .sort((a, b) => (b.idHabitacion || 0) - (a.idHabitacion || 0))
+            (h.data || []).sort((a, b) => b.idHabitacion - a.idHabitacion)
           );
 
-          this.paginaActual.update(p => Math.min(p, Math.max(1, this.totalPaginas())));
+          this.paginaActual.update(pNum => Math.min(pNum, Math.max(1, this.totalPaginas())));
         },
         error: err => this.mostrarError(err, 'No se pudieron cargar los datos')
       });
   }
 
-  abrir(h?: Habitacion): void {
-    this.habitacion.set(h ? { ...h, urlsImagenes: [...(h.urlsImagenes || [])] } : this.nuevoModelo());
+  abrir(h?: HabitacionResponseDTO): void {
+    if (h) {
+      this.idHabitacionEditando.set(h.idHabitacion);
+      this.habitacionForm.set({
+        idHotel: h.idHotel,
+        numero: h.numero,
+        detalle: h.detalle || '',
+        precio: h.precio,
+        idEstadoHabitacion: h.estadoHabitacion?.idEstadoHabitacion,
+        idPiso: h.piso?.idPiso,
+        idCategoria: h.categoria?.idCategoria,
+        urlsImagenes: h.imagenes?.map(img => img.urlImagen) || []
+      });
+    } else {
+      this.idHabitacionEditando.set(null);
+      this.habitacionForm.set(this.nuevoModeloRequest());
+    }
     this.modal.show();
   }
 
@@ -137,8 +141,14 @@ export class HabitacionListComponent implements OnInit {
 
   guardar(): void {
     this.isProcessing.set(true);
+    const dto = this.habitacionForm();
+    const idEdit = this.idHabitacionEditando();
 
-  this.service.guardar(this.habitacion())
+    const peticion = idEdit
+      ? this.service.actualizar(idEdit, dto)
+      : this.service.guardar(dto);
+
+    peticion
       .pipe(finalize(() => this.isProcessing.set(false)))
       .subscribe({
         next: () => {
@@ -149,7 +159,7 @@ export class HabitacionListComponent implements OnInit {
       });
   }
 
-  eliminar(h: Habitacion): void {
+  eliminar(h: HabitacionResponseDTO): void {
     if (!h.idHabitacion) return;
 
     Swal.fire({
@@ -163,7 +173,7 @@ export class HabitacionListComponent implements OnInit {
     }).then(res => {
       if (!res.isConfirmed) return;
 
-    this.service.eliminar(h.idHabitacion!).subscribe({
+      this.service.eliminar(h.idHabitacion).subscribe({
         next: () => this.operacionExitosa('Habitación dada de baja'),
         error: err => this.manejarErrorOperacion(
           err,
@@ -180,7 +190,8 @@ export class HabitacionListComponent implements OnInit {
     input.value = '';
     if (!archivos.length) return;
 
-    const cupo = this.maxImagenes - (this.habitacion().urlsImagenes?.length ?? 0);
+    const actual = this.habitacionForm();
+    const cupo = this.maxImagenes - (actual.urlsImagenes?.length ?? 0);
     if (cupo <= 0) {
       Swal.fire('Límite alcanzado', `Máximo ${this.maxImagenes} fotos por habitación.`, 'info');
       return;
@@ -193,7 +204,10 @@ export class HabitacionListComponent implements OnInit {
         .filter(f => f.type.startsWith('image/') && f.size <= this.maxBytesOriginal);
       const nuevas = await Promise.all(validos.map(f => this.comprimirImagen(f)));
 
-      this.habitacion.update(h => ({ ...h, urlsImagenes: [...(h.urlsImagenes ?? []), ...nuevas] }));
+      this.habitacionForm.update(form => ({
+        ...form,
+        urlsImagenes: [...(form.urlsImagenes ?? []), ...nuevas]
+      }));
 
       if (validos.length < archivos.length) {
         Swal.fire('Algunas fotos se omitieron', 'Solo se aceptan imágenes de hasta 10 MB y dentro del límite permitido.', 'info');
@@ -206,9 +220,9 @@ export class HabitacionListComponent implements OnInit {
   }
 
   eliminarImagen(indice: number): void {
-    this.habitacion.update(h => ({
-      ...h,
-      urlsImagenes: (h.urlsImagenes ?? []).filter((_, i) => i !== indice)
+    this.habitacionForm.update(form => ({
+      ...form,
+      urlsImagenes: (form.urlsImagenes ?? []).filter((_, i) => i !== indice)
     }));
   }
 
@@ -217,16 +231,16 @@ export class HabitacionListComponent implements OnInit {
     this.paginaActual.set(pagina);
   }
 
-  getEstadoBadgeClass(estado: string): string {
-    const estadoLower = estado?.toLowerCase() || '';
+  getEstadoBadgeClass(descripcionEstado?: string): string {
+    const estadoLower = descripcionEstado?.toLowerCase() || '';
     if (estadoLower.includes('disponible')) {
-      return 'bg-[#E7F4EC] text-[#1D7A4F]'; // Verde OK
+      return 'bg-[#E7F4EC] text-[#1D7A4F]';
     } else if (estadoLower.includes('ocupado')) {
-      return 'bg-[#FCEBE9] text-[#B3261E]'; // Rojo Alerta / Ocupado
+      return 'bg-[#FCEBE9] text-[#B3261E]';
     } else if (estadoLower.includes('mantenimiento')) {
-      return 'bg-[#FBF3E0] text-[#8F6400]'; // Amarillo Atención
+      return 'bg-[#FBF3E0] text-[#8F6400]';
     } else if (estadoLower.includes('limpieza')) {
-      return 'bg-[#E8F0FA] text-[#2361A8]'; // Azul Proceso
+      return 'bg-[#E8F0FA] text-[#2361A8]';
     }
     return 'bg-[#ECECEA] text-[#5B5B5B]';
   }
@@ -237,15 +251,21 @@ export class HabitacionListComponent implements OnInit {
       const img = new Image();
 
       img.onload = () => {
-        const escala = Math.min(1, this.maxLadoPx / Math.max(img.width, img.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * escala);
-        canvas.height = Math.round(img.height * escala);
-        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        try {
+          const escala = Math.min(1, this.maxLadoPx / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * escala);
+          canvas.height = Math.round(img.height * escala);
+          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        URL.revokeObjectURL(objectUrl);
-        resolve(canvas.toDataURL('image/jpeg', this.calidadJpeg));
+          resolve(canvas.toDataURL('image/jpeg', this.calidadJpeg));
+        } catch (e) {
+          reject(e);
+        } finally {
+          URL.revokeObjectURL(objectUrl);
+        }
       };
+
       img.onerror = () => {
         URL.revokeObjectURL(objectUrl);
         reject(new Error('Imagen inválida'));
@@ -283,15 +303,15 @@ export class HabitacionListComponent implements OnInit {
     Swal.fire('Error', detalle || mensajePorDefecto, 'error');
   }
 
-  private nuevoModelo(): Habitacion {
+  private nuevoModeloRequest(): HabitacionRequestDTO {
     return {
+      idHotel: 1,
       numero: '',
       detalle: '',
       precio: 0,
       idEstadoHabitacion: 1,
       idPiso: 1,
       idCategoria: 1,
-      estado: true,
       urlsImagenes: []
     };
   }

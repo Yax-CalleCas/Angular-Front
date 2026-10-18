@@ -9,7 +9,7 @@ import { HabitacionService } from '../../core/services/habitacion.service';
 import { PisoService } from '../../core/services/piso.service';
 import { CategoriaService } from '../../core/services/categoria.service';
 import { EstadoHabitacionService } from '../../core/services/EstadoHabitacionService';
-import { Habitacion } from '../../core/models/Habitacion';
+import { HabitacionResponseDTO } from '../../core/models/Habitacion';
 import { Piso } from '../../core/models/piso';
 
 @Component({
@@ -28,7 +28,7 @@ export class SalidaHabitacion implements OnInit {
   private readonly estService = inject(EstadoHabitacionService);
 
   // Signals
-  habitaciones = signal<Habitacion[]>([]);
+  habitaciones = signal<HabitacionResponseDTO[]>([]);
   pisos = signal<Piso[]>([]);
   idPisoSeleccionado = signal<number>(0);
   isLoading = signal(false);
@@ -38,7 +38,7 @@ export class SalidaHabitacion implements OnInit {
     const pId = Number(this.idPisoSeleccionado());
     return pId === 0
       ? this.habitaciones()
-      : this.habitaciones().filter(h => Number(h.idPiso) === pId);
+      : this.habitaciones().filter(h => Number(h.piso) === pId);
   });
 
   ngOnInit(): void {
@@ -60,11 +60,11 @@ export class SalidaHabitacion implements OnInit {
         const ests = estados.data ?? [];
 
         this.habitaciones.set((habitaciones.data ?? [])
-          .filter(h => Number(h.idEstadoHabitacion) === 2)
+          .filter(h => Number(h.estadoHabitacion) === 2)
           .map(h => ({
             ...h,
-            categoriaNombre: cats.find(c => Number(c.idCategoria) === Number(h.idCategoria))?.descripcion ?? 'N/A',
-            estadoDescripcion: ests.find(e => Number(e.idEstadoHabitacion) === Number(h.idEstadoHabitacion))?.descripcion ?? 'Ocupado'
+            categoriaNombre: cats.find(c => Number(c.idCategoria) === Number(h.categoria))?.descripcion ?? 'N/A',
+            estadoDescripcion: ests.find(e => Number(e.idEstadoHabitacion) === Number(h.estadoHabitacion))?.descripcion ?? 'Ocupado'
           }))
         );
         this.isLoading.set(false);
@@ -77,11 +77,11 @@ export class SalidaHabitacion implements OnInit {
     });
   }
 
-  trackByHabitacion(index: number, h: Habitacion): number {
+  trackByHabitacion(index: number, h: HabitacionResponseDTO): number {
     return h.idHabitacion!;
   }
 
-  procesarSalidaVenta(h: Habitacion): void {
+  procesarSalidaVenta(h: HabitacionResponseDTO): void {
     if (!h.idHabitacion) return;
     this.router.navigate(['/admin/procesarsalida', h.idHabitacion]);
   }

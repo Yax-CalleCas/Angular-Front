@@ -1,52 +1,51 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, shareReplay, tap } from 'rxjs';
-import { ApiResponse } from '../models/ApiResponse'; // Ajusta la ruta según tu estructura de carpetas
-import { Habitacion } from '../models/Habitacion';     // Ajusta la ruta según tu estructura de carpetas
+import { ApiResponse } from '../models/ApiResponse';
+import { HabitacionResponseDTO, HabitacionRequestDTO } from '../models/Habitacion';
 
 @Injectable({ providedIn: 'root' })
 export class HabitacionService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8081/api/habitacion'; // Ajusta el puerto o URL de tu hotel-service
+  private readonly baseUrl = 'http://localhost:8085/api/habitacion';
 
-  // Caché opcional para optimizar listados frecuentes en el tablero
-  private listarCache$?: Observable<ApiResponse<Habitacion[]>>;
+  private listarCache$?: Observable<ApiResponse<HabitacionResponseDTO[]>>;
 
-  listar(): Observable<ApiResponse<Habitacion[]>> {
+  listar(): Observable<ApiResponse<HabitacionResponseDTO[]>> {
     if (!this.listarCache$) {
-      this.listarCache$ = this.http.get<ApiResponse<Habitacion[]>>(`${this.baseUrl}/listar`).pipe(
+      this.listarCache$ = this.http.get<ApiResponse<HabitacionResponseDTO[]>>(`${this.baseUrl}/listar`).pipe(
         shareReplay(1)
       );
     }
     return this.listarCache$;
   }
 
+  listarPorHotel(idHotel: number): Observable<ApiResponse<HabitacionResponseDTO[]>> {
+    return this.http.get<ApiResponse<HabitacionResponseDTO[]>>(`${this.baseUrl}/listar/hotel/${idHotel}`);
+  }
+
   private invalidateCache(): void {
     this.listarCache$ = undefined;
   }
 
-  buscarPorId(id: number): Observable<ApiResponse<Habitacion>> {
-    return this.http.get<ApiResponse<Habitacion>>(`${this.baseUrl}/buscar/${id}`);
+  buscarPorId(id: number): Observable<ApiResponse<HabitacionResponseDTO>> {
+    return this.http.get<ApiResponse<HabitacionResponseDTO>>(`${this.baseUrl}/buscar/${id}`);
   }
 
-  guardar(dto: Habitacion): Observable<ApiResponse<Habitacion>> {
-    return this.http.post<ApiResponse<Habitacion>>(`${this.baseUrl}/registrar`, dto).pipe(
+  guardar(dto: HabitacionRequestDTO): Observable<ApiResponse<HabitacionResponseDTO>> {
+    return this.http.post<ApiResponse<HabitacionResponseDTO>>(`${this.baseUrl}/registrar`, dto).pipe(
       tap(() => this.invalidateCache())
     );
   }
 
-  actualizar(id: number, dto: Partial<Habitacion>): Observable<ApiResponse<Habitacion>> {
-    return this.http.put<ApiResponse<Habitacion>>(`${this.baseUrl}/actualizar/${id}`, dto).pipe(
+  actualizar(id: number, dto: HabitacionRequestDTO): Observable<ApiResponse<HabitacionResponseDTO>> {
+    return this.http.put<ApiResponse<HabitacionResponseDTO>>(`${this.baseUrl}/actualizar/${id}`, dto).pipe(
       tap(() => this.invalidateCache())
     );
   }
 
-  /**
-   * Método que permite actualizar de manera rápida el estado de la habitación
-   * (Ej: Cambiar a Ocupado ID 2 o Disponible ID 1) conectando con el @PatchMapping del backend.
-   */
-actualizarEstado(idHabitacion: number, idEstado: number): Observable<ApiResponse<Habitacion>> {
-    return this.http.patch<ApiResponse<Habitacion>>(`${this.baseUrl}/${idHabitacion}/estado/${idEstado}`, {}).pipe(
+  actualizarEstado(idHabitacion: number, idEstado: number): Observable<ApiResponse<HabitacionResponseDTO>> {
+    return this.http.patch<ApiResponse<HabitacionResponseDTO>>(`${this.baseUrl}/${idHabitacion}/estado/${idEstado}`, {}).pipe(
       tap(() => this.invalidateCache())
     );
   }

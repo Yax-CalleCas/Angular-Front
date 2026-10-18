@@ -3,17 +3,17 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, shareReplay, tap } from 'rxjs';
 
 import { ApiResponse } from '../../core/models/ApiResponse';
-import { EstadoHabitacion } from '../models/estado-habitacion.model';
+import { EstadoHabitacionResponseDTO } from '../models/estado-habitacion.model';
 
 @Injectable({ providedIn: 'root' })
 export class EstadoHabitacionService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:8085/api/estadohabitacion';
-  private listarCache$?: Observable<ApiResponse<EstadoHabitacion[]>>;
+  private listarCache$?: Observable<ApiResponse<EstadoHabitacionResponseDTO[]>>;
 
-  listar(): Observable<ApiResponse<EstadoHabitacion[]>> {
+  listar(): Observable<ApiResponse<EstadoHabitacionResponseDTO[]>> {
     if (!this.listarCache$) {
-      this.listarCache$ = this.http.get<ApiResponse<EstadoHabitacion[]>>(`${this.baseUrl}/listar`).pipe(
+      this.listarCache$ = this.http.get<ApiResponse<EstadoHabitacionResponseDTO[]>>(`${this.baseUrl}/listar`).pipe(
         shareReplay(1)
       );
     }
@@ -24,18 +24,18 @@ export class EstadoHabitacionService {
     this.listarCache$ = undefined;
   }
 
-  buscar(id: number): Observable<ApiResponse<EstadoHabitacion>> {
-    return this.http.get<ApiResponse<EstadoHabitacion>>(`${this.baseUrl}/buscar/${id}`);
+  buscar(id: number): Observable<ApiResponse<EstadoHabitacionResponseDTO>> {
+    return this.http.get<ApiResponse<EstadoHabitacionResponseDTO>>(`${this.baseUrl}/buscar/${id}`);
   }
 
-  registrar(estado: EstadoHabitacion): Observable<ApiResponse<EstadoHabitacion>> {
-    return this.http.post<ApiResponse<EstadoHabitacion>>(`${this.baseUrl}/registrar`, estado).pipe(
+  registrar(estado: EstadoHabitacionResponseDTO): Observable<ApiResponse<EstadoHabitacionResponseDTO>> {
+    return this.http.post<ApiResponse<EstadoHabitacionResponseDTO>>(`${this.baseUrl}/registrar`, estado).pipe(
       tap(() => this.invalidateCache())
     );
   }
 
-  actualizar(id: number, estado: EstadoHabitacion): Observable<ApiResponse<EstadoHabitacion>> {
-    return this.http.put<ApiResponse<EstadoHabitacion>>(`${this.baseUrl}/actualizar/${id}`, estado).pipe(
+  actualizar(id: number, estado: EstadoHabitacionResponseDTO): Observable<ApiResponse<EstadoHabitacionResponseDTO>> {
+    return this.http.put<ApiResponse<EstadoHabitacionResponseDTO>>(`${this.baseUrl}/actualizar/${id}`, estado).pipe(
       tap(() => this.invalidateCache())
     );
   }

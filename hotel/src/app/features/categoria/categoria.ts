@@ -7,7 +7,7 @@ import Swal from 'sweetalert2';
 import { CategoriaService } from '../../core/services/categoria.service';
 import { EstadoHabitacionService } from '../../core/services/EstadoHabitacionService';
 import { Categoria } from '../../core/models/categoria.model';
-import { EstadoHabitacion } from '../../core/models/estado-habitacion.model';
+import { EstadoHabitacionResponseDTO } from '../../core/models/estado-habitacion.model';
 
 @Component({
   selector: 'app-categoria',
@@ -27,8 +27,8 @@ export class CategoriaComponent implements OnInit {
   isProcessingCategoria = false;
 
   // --- ESTADOS DE HABITACIÓN ---
-  estados: EstadoHabitacion[] = [];
-  estadoHabitacion: EstadoHabitacion = this.nuevoModeloEstado();
+  estados: EstadoHabitacionResponseDTO[] = [];
+  estadoHabitacion: EstadoHabitacionResponseDTO = this.nuevoModeloEstado();
   isProcessingEstado = false;
 
   ngOnInit(): void {
@@ -131,7 +131,7 @@ export class CategoriaComponent implements OnInit {
 
     const operacion$ = id
       ? this.estadoService.actualizar(id, this.estadoHabitacion)
-      : this.estadoService.registrar(sinId as EstadoHabitacion);
+      : this.estadoService.registrar(sinId as EstadoHabitacionResponseDTO);
 
     operacion$
       .pipe(finalize(() => {
@@ -171,11 +171,12 @@ export class CategoriaComponent implements OnInit {
     });
   }
 
-  nuevoModeloEstado(): EstadoHabitacion {
-    return { idEstadoHabitacion: 0, descripcion: '', estado: true };
+  // 🔹 Se añadió la propiedad 'codigo' obligatoria que exige EstadoHabitacionResponseDTO
+  nuevoModeloEstado(): EstadoHabitacionResponseDTO {
+    return { idEstadoHabitacion: 0, codigo: '', descripcion: '', estado: true };
   }
 
-  abrirEstado(e?: EstadoHabitacion): void {
+  abrirEstado(e?: EstadoHabitacionResponseDTO): void {
     this.estadoHabitacion = e ? { ...e } : this.nuevoModeloEstado();
     const modalEl = document.getElementById('modalEstado');
     if (modalEl) (window as any).bootstrap.Modal.getOrCreateInstance(modalEl).show();

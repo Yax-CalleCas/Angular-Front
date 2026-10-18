@@ -1,8 +1,9 @@
+
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { HabitacionService } from '../../../../core/services/habitacion.service';
-import { Habitacion } from '../../../../core/models/Habitacion';
+import { HabitacionResponseDTO } from '../../../../core/models/Habitacion';
 
 @Component({
   selector: 'app-habitacion-cliente',
@@ -16,7 +17,7 @@ export class HabitacionCliente implements OnInit {
   private habitacionService = inject(HabitacionService);
   private router = inject(Router);
 
-  habitaciones: Habitacion[] = [];
+  habitaciones: HabitacionResponseDTO[] = [];
   cargando = false;
 
   ngOnInit(): void {
@@ -51,7 +52,7 @@ cargarHabitaciones(): void {
     this.router.navigate(['/cliente/datalleAlquiler', idHabitacion]);
   }
 
-  trackByHabitacion(index: number, item: Habitacion): number {
+  trackByHabitacion(index: number, item: HabitacionResponseDTO): number {
     return item.idHabitacion!;
   }
 }

@@ -1,6 +1,6 @@
-export interface EstadoHabitacion {
+export interface EstadoHabitacionResponseDTO {
   idEstadoHabitacion: number;
+  codigo: string;
   descripcion: string;
-  estado?: boolean;
-  fechaCreacion?: string;
+  estado: boolean;
 }

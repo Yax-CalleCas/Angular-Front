@@ -8,7 +8,7 @@ import { HabitacionService } from '../../core/services/habitacion.service';
 import { PisoService } from '../../core/services/piso.service';
 import { CategoriaService } from '../../core/services/categoria.service';
 import { EstadoHabitacionService } from '../../core/services/EstadoHabitacionService';
-import { Habitacion } from '../../core/models/Habitacion';
+import { HabitacionRequestDTO, HabitacionResponseDTO } from '../../core/models/Habitacion';
 
 @Component({
   selector: 'app-recepcion',
@@ -24,7 +24,7 @@ export class RecepcionComponent implements OnInit {
   private readonly catService = inject(CategoriaService);
   private readonly estService = inject(EstadoHabitacionService);
 
-  habitaciones = signal<Habitacion[]>([]);
+  habitaciones = signal<HabitacionResponseDTO[]>([]);
   pisos = signal<any[]>([]);
   idPisoSeleccionado = signal<number>(0);
   isLoading = signal(false);
@@ -36,7 +36,7 @@ export class RecepcionComponent implements OnInit {
     const pId = Number(this.idPisoSeleccionado());
     return pId === 0
       ? this.habitaciones()
-      : this.habitaciones().filter(h => Number(h.idPiso) === pId);
+      : this.habitaciones().filter(h => Number(h.piso) === pId);
   });
 
   ngOnInit(): void {
@@ -75,8 +75,8 @@ export class RecepcionComponent implements OnInit {
     return id ? (this.estsMap.get(Number(id)) ?? 'N/A') : 'N/A';
   }
 
-  abrirDetalle(habitacion: Habitacion): void {
-    const estadoNombre = this.getEstNombre(habitacion.idEstadoHabitacion).toLowerCase();
+  abrirDetalle(habitacion: HabitacionResponseDTO): void {
+    const estadoNombre = this.getEstNombre(habitacion.idHabitacion).toLowerCase();
 
     if (estadoNombre.includes('libre') || estadoNombre.includes('disponible')) {
       this.router.navigate(['/admin/recepciondetalle', habitacion.idHabitacion]);
