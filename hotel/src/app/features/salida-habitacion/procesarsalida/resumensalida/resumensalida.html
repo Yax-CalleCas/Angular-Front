@@ -49,6 +49,9 @@
           <td class="text-end">S/ {{ s.precioUnitario | number:'1.2-2' }}</td>
           <td class="text-end">S/ {{ s.subTotal | number:'1.2-2' }}</td>
         </tr>
+        <tr *ngIf="servicios().length === 0">
+          <td colspan="4" class="text-center text-muted py-3">No se registraron consumos adicionales.</td>
+        </tr>
       </tbody>
     </table>
 
@@ -66,7 +69,7 @@
   </div>
 
   <div class="text-center mt-4 no-print">
-    <button class="btn btn-outline-secondary me-2" routerLink="/admin/reportes">Ir A reportes</button>
+    <button class="btn btn-outline-secondary me-2" routerLink="/admin/recepcion">Ir a Recepción</button>
     <button class="btn btn-primary" (click)="imprimir()">Imprimir Comprobante</button>
   </div>
 </div>
@@ -74,6 +77,6 @@
 <ng-template #cargando>
   <div class="text-center mt-5" *ngIf="isLoading()">
     <div class="spinner-border text-primary" role="status"></div>
-    <p>Cargando comprobante...</p>
+    <p class="mt-2">Cargando comprobante...</p>
   </div>
 </ng-template>

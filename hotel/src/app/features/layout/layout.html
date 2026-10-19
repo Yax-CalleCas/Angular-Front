@@ -13,10 +13,12 @@
 
       @if (hasRole('Administrador')) {
         <div class="nav-section">Operación</div>
-        <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link"><i class="bi bi-speedometer2"></i> Admin</a>
-        <a routerLink="/admin/recepcion" routerLinkActive="active" class="nav-link"><i class="bi bi-clipboard-check"></i> G. Recepción</a>
+          <a routerLink="/admin/recepcion" routerLinkActive="active" class="nav-link"><i class="bi bi-clipboard-check"></i> G. Recepción</a>
         <a routerLink="/admin/venta" routerLinkActive="active" class="nav-link"><i class="bi bi-house-lock"></i> Venta Productos</a>
         <a routerLink="/admin/salidaHabitacion" routerLinkActive="active" class="nav-link"><i class="bi bi-box-arrow-left"></i> Recepción Salida</a>
+
+         <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link"><i class="bi bi-speedometer2"></i> Admin</a>
+
 
         <div class="nav-section">Catálogo</div>
         <a routerLink="/admin/habitacion" routerLinkActive="active" class="nav-link"><i class="bi bi-door-open"></i> G. Habitaciones</a>
@@ -59,7 +61,7 @@
 
     <footer class="app-footer">
       <div class="footer-title">Sistema de Gestión Hotelera</div>
-      <small>Desarrollado por Grupo 7 | Cibertec © 2026</small>
+      <small>Desarrollado por Grupo 6 | Cibertec © 2026</small>
     </footer>
   </main>
 </div>

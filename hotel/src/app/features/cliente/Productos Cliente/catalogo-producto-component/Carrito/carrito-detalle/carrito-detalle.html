@@ -16,10 +16,10 @@
             <div>
               <h5>{{ item.nombreProducto }}</h5>
               <p class="mb-0">Cantidad: {{ item.cantidad }}</p>
-              <small class="text-muted">Precio unitario: {{ item.precioUnitario | currency }}</small>
+              <small class="text-muted">Precio unitario: {{ item.precioProducto| currency }}</small>
             </div>
             <div class="text-end">
-              <h5 class="text-primary">{{ (toNumber(item.precioUnitario) * item.cantidad) | currency }}</h5>
+              <h5 class="text-primary">{{ (toNumber(item.precioProducto) * item.cantidad) | currency }}</h5>
               <button class="btn btn-outline-danger btn-sm"
                       (click)="eliminarDelCarrito(item.idProducto)"
                       [disabled]="isProcessing">

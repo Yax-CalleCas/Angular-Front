@@ -28,8 +28,6 @@ export class CarritoDetalle implements OnInit, OnDestroy {
   isProcessing = false;
 
   ngOnInit(): void {
-
-    // 🔥 SOLO TOMAMOS EL ID DE LA RUTA
     this.idRecepcion = Number(this.route.snapshot.paramMap.get('id'));
 
     if (!this.idRecepcion || isNaN(this.idRecepcion)) {
@@ -37,7 +35,6 @@ export class CarritoDetalle implements OnInit, OnDestroy {
       return;
     }
 
-    // 🔥 CARGAR CARRITO DIRECTO
     this.carritoService.actualizarCarrito(this.idRecepcion);
 
     this.carritoSub = this.carritoService.carrito$.subscribe(items => {
@@ -52,7 +49,7 @@ export class CarritoDetalle implements OnInit, OnDestroy {
 
   calcularTotal(): number {
     return this.carritoItems.reduce((acc, item) =>
-      acc + (Number(item.precioUnitario || 0) * item.cantidad), 0
+      acc + (Number(item.precioProducto || 0) * item.cantidad), 0
     );
   }
 
@@ -68,36 +65,32 @@ export class CarritoDetalle implements OnInit, OnDestroy {
   }
 
   procesarPedido(estado: 'PENDIENTE' | 'PAGADO'): void {
-
     if (this.carritoItems.length === 0) return;
 
     this.isProcessing = true;
 
+    // Alineado con VentaDto (usando detalleVentas en lugar de detalles)
     const ventaData = {
       idRecepcion: this.idRecepcion,
       estado: estado,
-      detalles: JSON.stringify(
-        this.carritoItems.map(item => ({
-          idProducto: item.idProducto,
-          cantidad: item.cantidad,
-          precioUnitario: item.precioUnitario
-        }))
-      )
+      detalleVentas: this.carritoItems.map(item => ({
+        idProducto: item.idProducto,
+        cantidad: item.cantidad,
+        precioUnitario: item.precioProducto
+      }))
     };
 
-    this.ventaService.guardar(ventaData).subscribe({
+    this.ventaService.guardar(ventaData as any).subscribe({
       next: () => {
         this.isProcessing = false;
         this.carritoItems = [];
         this.cdr.markForCheck();
 
         Swal.fire('Éxito', `Pedido ${estado} registrado correctamente`, 'success');
-
         this.carritoService.actualizarCarrito(this.idRecepcion);
       },
       error: (err) => {
         this.isProcessing = false;
-
         Swal.fire('Error', err.error?.message || 'No se pudo procesar el pedido', 'error');
       }
     });

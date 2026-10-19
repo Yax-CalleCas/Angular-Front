@@ -36,7 +36,9 @@ export class CategoriaComponent implements OnInit {
     this.cargarEstados();
   }
 
-  // ================= CATEGORÍAS =================
+  // ==========================================
+  // SECCIÓN: CATEGORÍAS
+  // ==========================================
   cargarCategorias(): void {
     this.service.listar().subscribe({
       next: (res) => {
@@ -54,15 +56,18 @@ export class CategoriaComponent implements OnInit {
     const id = this.categoria.idCategoria;
     const { idCategoria, ...sinId } = this.categoria;
 
-    const operacion$ = id
+    // Si id existe y es mayor a 0, actualiza; de lo contrario, registra
+    const operacion$ = id && id > 0
       ? this.service.actualizar(id, this.categoria)
       : this.service.registrar(sinId as Categoria);
 
     operacion$
-      .pipe(finalize(() => {
-        this.isProcessingCategoria = false;
-        this.cdr.detectChanges();
-      }))
+      .pipe(
+        finalize(() => {
+          this.isProcessingCategoria = false;
+          this.cdr.detectChanges();
+        })
+      )
       .subscribe({
         next: () => {
           Swal.fire('Éxito', 'Categoría guardada correctamente', 'success');
@@ -70,7 +75,7 @@ export class CategoriaComponent implements OnInit {
           this.cerrarModalCategoria();
         },
         error: (err) =>
-          Swal.fire('Error', err.error?.message || 'Error al guardar', 'error')
+          Swal.fire('Error', err.error?.message || 'Error al guardar la categoría', 'error')
       });
   }
 
@@ -78,26 +83,27 @@ export class CategoriaComponent implements OnInit {
     if (!id) return;
     Swal.fire({
       title: '¿Estás seguro?',
-      text: 'La categoría será desactivada',
+      text: 'La categoría será dada de baja',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar'
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
         this.service.eliminar(id).subscribe({
           next: () => {
             this.cargarCategorias();
-            Swal.fire('Eliminado', 'Categoría dada de baja', 'success');
+            Swal.fire('Eliminado', 'Categoría dada de baja correctamente', 'success');
           },
           error: (err) =>
-            Swal.fire('Error', err.error?.message || 'No se pudo eliminar', 'error')
+            Swal.fire('Error', err.error?.message || 'No se pudo eliminar la categoría', 'error')
         });
       }
     });
   }
 
   nuevoModeloCategoria(): Categoria {
-    return { idCategoria: 0, descripcion: '', estado: true };
+    return { descripcion: '', estado: true };
   }
 
   abrirCategoria(c?: Categoria): void {
@@ -111,7 +117,9 @@ export class CategoriaComponent implements OnInit {
     if (modalEl) (window as any).bootstrap.Modal.getInstance(modalEl)?.hide();
   }
 
-  // ================= ESTADOS DE HABITACIÓN =================
+  // ==========================================
+  // SECCIÓN: ESTADOS DE HABITACIÓN
+  // ==========================================
   cargarEstados(): void {
     this.estadoService.listar().subscribe({
       next: (res) => {
@@ -129,15 +137,17 @@ export class CategoriaComponent implements OnInit {
     const id = this.estadoHabitacion.idEstadoHabitacion;
     const { idEstadoHabitacion, ...sinId } = this.estadoHabitacion;
 
-    const operacion$ = id
+    const operacion$ = id && id > 0
       ? this.estadoService.actualizar(id, this.estadoHabitacion)
       : this.estadoService.registrar(sinId as EstadoHabitacionResponseDTO);
 
     operacion$
-      .pipe(finalize(() => {
-        this.isProcessingEstado = false;
-        this.cdr.detectChanges();
-      }))
+      .pipe(
+        finalize(() => {
+          this.isProcessingEstado = false;
+          this.cdr.detectChanges();
+        })
+      )
       .subscribe({
         next: () => {
           Swal.fire('Éxito', 'Estado de habitación guardado correctamente', 'success');
@@ -156,7 +166,8 @@ export class CategoriaComponent implements OnInit {
       text: 'El estado de habitación será dado de baja',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar'
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
         this.estadoService.eliminar(id).subscribe({
@@ -165,13 +176,12 @@ export class CategoriaComponent implements OnInit {
             Swal.fire('Eliminado', 'Estado dado de baja', 'success');
           },
           error: (err) =>
-            Swal.fire('Error', err.error?.message || 'No se pudo eliminar', 'error')
+            Swal.fire('Error', err.error?.message || 'No se pudo eliminar el estado', 'error')
         });
       }
     });
   }
 
-  // 🔹 Se añadió la propiedad 'codigo' obligatoria que exige EstadoHabitacionResponseDTO
   nuevoModeloEstado(): EstadoHabitacionResponseDTO {
     return { idEstadoHabitacion: 0, codigo: '', descripcion: '', estado: true };
   }

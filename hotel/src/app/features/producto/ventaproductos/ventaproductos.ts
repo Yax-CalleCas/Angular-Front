@@ -6,14 +6,7 @@ import Swal from 'sweetalert2';
 import { RecepcionService } from '../../../core/services/recepcion.service';
 import { ProductoService } from '../../../core/services/producto.service';
 import { VentaService } from '../../../core/services/venta.service';
-
-// Interfaces para tipado fuerte
-interface Producto {
-  idProducto: number;
-  nombre: string;
-  precio: number;
-  cantidad: number;
-}
+import { Producto } from '../../../core/models/producto';
 
 interface ItemCarrito {
   idProducto: number;
@@ -37,7 +30,6 @@ export class Ventaproductos implements OnInit {
   private ventaService = inject(VentaService);
   private cdr = inject(ChangeDetectorRef);
 
-  // Tipado explícito en lugar de any
   datosRecepcion: any = null;
   listaProductos: Producto[] = [];
   carrito: ItemCarrito[] = [];
@@ -68,19 +60,19 @@ export class Ventaproductos implements OnInit {
     });
   }
 
-  // Método explícito para el template
-obtenerPrecioActual(): number {
-  const prod = this.listaProductos.find(p => p.idProducto == this.productoSeleccionadoId);
-  return prod ? prod.precio : 0;
-}
+  obtenerPrecioActual(): number {
+    const prod = this.listaProductos.find(p => p.idProducto == this.productoSeleccionadoId);
+    return prod ? (prod.precio || 0) : 0;
+  }
 
   agregarAlCarrito(): void {
     if (this.productoSeleccionadoId === 0) return;
 
     const prod = this.listaProductos.find(p => p.idProducto == this.productoSeleccionadoId);
-    if (!prod) return;
+    if (!prod || prod.idProducto === undefined) return;
 
     const itemExistente = this.carrito.find(item => item.idProducto === prod.idProducto);
+    const precioProd = prod.precio || 0;
 
     if (itemExistente) {
       itemExistente.cantidad += this.cantidad;
@@ -89,9 +81,9 @@ obtenerPrecioActual(): number {
       this.carrito.push({
         idProducto: prod.idProducto,
         nombre: prod.nombre,
-        precio: prod.precio,
+        precio: precioProd,
         cantidad: this.cantidad,
-        subTotal: prod.precio * this.cantidad
+        subTotal: precioProd * this.cantidad
       });
     }
 
@@ -112,18 +104,18 @@ obtenerPrecioActual(): number {
 
     this.isProcessing = true;
 
-    // Estructura adaptada para el nuevo Backend (Function wrapper)
+    // Estructura adaptada utilizando detalleVentas para cumplir con VentaDto
     const ventaData = {
       idRecepcion: this.datosRecepcion.idRecepcion,
       estado: this.estadoVenta,
-      detalles: this.carrito.map(item => ({
+      detalleVentas: this.carrito.map(item => ({
         idProducto: item.idProducto,
         cantidad: item.cantidad,
         precioUnitario: item.precio
       }))
     };
 
-    this.ventaService.guardar(ventaData).subscribe({
+    this.ventaService.guardar(ventaData as any).subscribe({
       next: () => {
         this.isProcessing = false;
         Swal.fire('Éxito', `Venta registrada como ${this.estadoVenta}`, 'success')

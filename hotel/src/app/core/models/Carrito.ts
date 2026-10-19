@@ -1,17 +1,14 @@
 export interface Carrito {
   idCarrito?: number;
   idRecepcion: number;
-  idPersona: number;
   idProducto: number;
 
-  // Información del producto
+  // Información adicional que retorna el backend o se calcula
   nombreProducto?: string;
-  precioUnitario?: number;
+  precioProducto?: number;
   imagenUrl?: string;
 
   cantidad: number;
-  fechaRegistro?: string;
-
-  // El cálculo del subtotal en el frontend
   subtotal?: number;
+  fechaRegistro?: string;
 }

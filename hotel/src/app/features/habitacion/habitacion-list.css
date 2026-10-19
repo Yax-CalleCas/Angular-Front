@@ -1,12 +1,597 @@
-/* Utilidades genéricas usadas en habitacion-list.html (sin colores) */
-.text-xs { font-size: 0.75rem; line-height: 1rem; }
-.font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; }
-.tabular-nums { font-variant-numeric: tabular-nums; }
-.px-2\.5 { padding-left: 0.625rem; padding-right: 0.625rem; }
-.py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
-.cursor-pointer { cursor: pointer; }
-.border-dashed { border-style: dashed; }
-.transition-all { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
+/* ==========================================================================
+   HabitacionListComponent · habitacion-list.css
+   --------------------------------------------------------------------------
+   Estilos encapsulados por Angular. Los colores de marca se siguen tomando de
+   las utilidades globales ya existentes (text-tinta, text-garua, border-junta,
+   bg-sillar-piedra, text-cochinilla...). Aquí solo se define geometría,
+   tipografía, estados y los colores de estado que ya vivían en el TypeScript.
+   ========================================================================== */
 
-/* Provisional: el texto de los badges hereda el color de la celda (Bootstrap lo pone en blanco por defecto). */
-.badge { color: inherit; }
+/* ── 1. Tokens locales ─────────────────────────────────────────────────── */
+:host {
+  display: block;
+
+  --hab-radius-lg: 14px;
+  --hab-radius-md: 10px;
+  --hab-radius-sm: 8px;
+
+  --hab-shadow-card: 0 1px 2px rgba(20, 28, 40, 0.05), 0 10px 28px -14px rgba(20, 28, 40, 0.14);
+  --hab-shadow-menu: 0 14px 34px -10px rgba(20, 28, 40, 0.2);
+
+  --hab-focus-ring: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.28);
+  --hab-danger: #b3261e;
+  --hab-danger-soft: #fcebe9;
+  --hab-danger-ring: 0 0 0 4px rgba(179, 38, 30, 0.2);
+
+  --hab-row-hover: rgba(20, 28, 40, 0.03);
+  --hab-row-line: rgba(20, 28, 40, 0.07);
+
+  --hab-ctrl-h: 2.5rem;
+}
+
+/* Transiciones solo si la persona no pidió movimiento reducido */
+@media (prefers-reduced-motion: no-preference) {
+  .hab-btn,
+  .hab-control,
+  .hab-search,
+  .hab-subir,
+  .hab-foto__quitar,
+  .hab-pagination .page-link {
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+      box-shadow 0.15s ease, color 0.15s ease;
+  }
+}
+
+/* ── 2. Encabezado ─────────────────────────────────────────────────────── */
+.hab-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .hab-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/* Marcellus solo existe en peso 400: evitar negrita sintética */
+.hab-title {
+  margin: 0 0 0.375rem;
+  font-size: clamp(1.5rem, 1.25rem + 0.9vw, 1.875rem);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0.005em;
+}
+
+.hab-subtitle {
+  max-width: 62ch;
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+/* ── 3. Botones ────────────────────────────────────────────────────────── */
+/* Se conservan btn-primary-sillar / btn-secondary-sillar para el color;
+   aquí solo se unifica tamaño, alineación de iconos y estados. */
+.hab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: var(--hab-ctrl-h);
+  padding: 0.5rem 1.125rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  border-radius: var(--hab-radius-sm);
+}
+
+.hab-btn .bi {
+  font-size: 1em;
+  line-height: 1;
+}
+
+.hab-btn:focus-visible {
+  outline: 2px solid transparent; /* visible en modo alto contraste */
+  box-shadow: var(--hab-focus-ring);
+}
+
+.hab-btn:disabled {
+  opacity: 0.55;
+}
+
+.hab-btn--sm {
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+@media (pointer: coarse) {
+  .hab-btn--sm {
+    min-height: 2.5rem;
+  }
+}
+
+/* ── 4. Tarjeta y barra de filtro ──────────────────────────────────────── */
+.hab-card {
+  border-radius: var(--hab-radius-lg);
+  box-shadow: var(--hab-shadow-card);
+}
+
+.hab-card__body {
+  padding: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .hab-card__body {
+    padding: 1.75rem;
+  }
+}
+
+.hab-toolbar {
+  margin-bottom: 1.25rem;
+}
+
+.hab-search {
+  --bs-border-radius: var(--hab-radius-sm);
+  max-width: 26rem;
+  border-radius: var(--hab-radius-sm);
+}
+
+.hab-search .input-group-text,
+.hab-search .form-control {
+  min-height: var(--hab-ctrl-h);
+  font-size: 0.875rem;
+}
+
+.hab-search:focus-within {
+  box-shadow: var(--hab-focus-ring);
+}
+
+/* ── 5. Estados de carga y vacío ───────────────────────────────────────── */
+.hab-loading {
+  padding: 3rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.hab-spinner {
+  width: 2rem;
+  height: 2rem;
+}
+
+.hab-empty {
+  padding: 3rem 1rem;
+  text-align: center;
+  font-size: 0.9375rem;
+}
+
+.hab-empty .bi {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+/* ── 6. Tabla ──────────────────────────────────────────────────────────── */
+.hab-tablewrap {
+  border-radius: var(--hab-radius-md);
+}
+
+.hab-table {
+  --bs-table-bg: transparent;
+  --bs-table-hover-bg: var(--hab-row-hover);
+  min-width: 46rem;
+  font-size: 0.875rem;
+}
+
+.hab-table thead th {
+  padding: 0.875rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.hab-table tbody td {
+  padding: 0.875rem 1rem;
+  vertical-align: middle;
+  border-bottom-color: var(--hab-row-line);
+}
+
+.hab-table tbody tr:last-child td {
+  border-bottom-width: 0;
+}
+
+.hab-col-num {
+  width: 6.5rem;
+}
+
+.hab-col-fotos {
+  width: 5.5rem;
+}
+
+.hab-col-acciones {
+  width: 9rem;
+}
+
+/* En pantallas pequeñas la tabla se desplaza dentro de su contenedor y la
+   columna del número queda fija para no perder la referencia de la fila. */
+@media (max-width: 767.98px) {
+  .hab-table thead th:first-child,
+  .hab-table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    border-right: 1px solid var(--hab-row-line);
+  }
+
+  .hab-table thead th:first-child {
+    background-color: inherit;
+  }
+
+  .hab-table tbody td:first-child {
+    background-color: #fff;
+  }
+}
+
+/* Número de habitación: placa de puerta */
+.hab-placa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.25rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  background-color: #fff;
+  border-radius: var(--hab-radius-sm);
+  box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 3px rgba(20, 28, 40, 0.1);
+}
+
+/* Categoría */
+.hab-chip {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.3;
+  border-radius: 6px;
+}
+
+/* Estado: base neutra + variantes según las clases que devuelve
+   getEstadoBadgeClass() (se leen con selectores de atributo, sin tocar el TS) */
+.hab-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.7rem 0.25rem 0.55rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: #5b5b5b;
+  background-color: #ecece9;
+  border-radius: 999px;
+}
+
+.hab-estado__punto {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: currentColor;
+  border-radius: 50%;
+}
+
+.hab-estado[class~="bg-[#E7F4EC]"] { background-color: #e7f4ec; }
+.hab-estado[class~="text-[#1D7A4F]"] { color: #1d7a4f; }
+
+.hab-estado[class~="bg-[#FCEBE9]"] { background-color: #fcebe9; }
+.hab-estado[class~="text-[#B3261E]"] { color: #b3261e; }
+
+.hab-estado[class~="bg-[#FBF3E0]"] { background-color: #fbf3e0; }
+.hab-estado[class~="text-[#8F6400]"] { color: #8f6400; }
+
+.hab-estado[class~="bg-[#E8F0FA]"] { background-color: #e8f0fa; }
+.hab-estado[class~="text-[#2361A8]"] { color: #2361a8; }
+
+/* Tarifa */
+.hab-precio {
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.hab-moneda {
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+/* Conteo de fotos */
+.hab-fotos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+}
+
+/* ── 7. Menú desplegable de acciones ───────────────────────────────────── */
+.hab-menu {
+  --bs-dropdown-font-size: 0.875rem;
+  --bs-dropdown-border-radius: var(--hab-radius-md);
+  --bs-dropdown-padding-y: 0.375rem;
+  min-width: 11rem;
+  box-shadow: var(--hab-shadow-menu);
+}
+
+.hab-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: auto;
+  margin-inline: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+.hab-menu .dropdown-item .bi {
+  line-height: 1;
+}
+
+.hab-menu .hab-menu__item--peligro {
+  --bs-dropdown-link-hover-bg: var(--hab-danger-soft);
+  --bs-dropdown-link-hover-color: var(--hab-danger);
+}
+
+/* ── 8. Paginación ─────────────────────────────────────────────────────── */
+.hab-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  font-size: 0.8125rem;
+}
+
+@media (min-width: 576px) {
+  .hab-footer {
+    flex-direction: row;
+  }
+}
+
+.hab-pagination {
+  --bs-pagination-font-size: 0.8125rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.hab-pagination .page-item .page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  margin-left: 0;
+  border-radius: var(--hab-radius-sm);
+}
+
+.hab-pagination .page-link:focus-visible {
+  box-shadow: var(--hab-focus-ring);
+}
+
+@media (pointer: coarse) {
+  .hab-pagination .page-item .page-link {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
+/* ── 9. Modal ──────────────────────────────────────────────────────────── */
+.hab-modal .modal-content {
+  border-radius: var(--hab-radius-lg);
+  overflow: hidden;
+}
+
+.hab-modal .modal-header {
+  padding: 1.125rem 1.5rem;
+}
+
+.hab-modal__titulo {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+}
+
+.hab-modal .modal-body {
+  padding: 1.25rem;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 576px) {
+  .hab-modal .modal-body {
+    padding: 1.5rem;
+  }
+}
+
+/* ── 10. Formulario ────────────────────────────────────────────────────── */
+.hab-label {
+  display: inline-block;
+  margin-bottom: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.hab-control {
+  min-height: var(--hab-ctrl-h);
+  font-size: 0.875rem;
+  border-radius: var(--hab-radius-sm);
+}
+
+textarea.hab-control {
+  min-height: 0;
+}
+
+.hab-control:focus {
+  box-shadow: var(--hab-focus-ring);
+}
+
+/* Validación (Angular): el contorno rojo se acompaña de un trazo más grueso
+   para no depender solo del color */
+.hab-control.ng-invalid.ng-touched {
+  border-color: var(--hab-danger);
+  box-shadow: 0 0 0 1px var(--hab-danger);
+}
+
+.hab-control.ng-invalid.ng-touched:focus {
+  box-shadow: 0 0 0 1px var(--hab-danger), var(--hab-danger-ring);
+}
+
+/* ── 11. Galería de fotografías ────────────────────────────────────────── */
+.hab-galeria-bloque {
+  margin-top: 0.25rem;
+  padding-top: 1.25rem;
+}
+
+.hab-galeria-cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+}
+
+.hab-galeria-cabecera .hab-label {
+  margin-bottom: 0;
+}
+
+.hab-contador {
+  font-size: 0.8125rem;
+}
+
+.hab-galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.hab-foto,
+.hab-subir {
+  aspect-ratio: 1;
+  border-radius: var(--hab-radius-md);
+}
+
+.hab-foto {
+  position: relative;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.hab-foto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hab-foto__quitar {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: #fff;
+  background-color: rgba(20, 28, 40, 0.78);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Área táctil ampliada sin agrandar el botón visible */
+.hab-foto__quitar::after {
+  content: "";
+  position: absolute;
+  inset: -0.35rem;
+}
+
+.hab-foto__quitar:hover {
+  background-color: var(--hab-danger);
+}
+
+.hab-foto__quitar:focus-visible {
+  outline: 2px solid #fff;
+  box-shadow: 0 0 0 4px var(--hab-danger);
+}
+
+.hab-subir {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #fff;
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.hab-subir .bi {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.hab-subir:hover {
+  background-color: rgba(20, 28, 40, 0.035);
+}
+
+/* El input queda accesible por teclado (visually-hidden); el foco se
+   muestra en la etiqueta que lo contiene */
+.hab-subir:focus-within {
+  box-shadow: var(--hab-focus-ring);
+}
+
+.hab-subir:has(input:disabled) {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* ── 12. Botones del formulario ────────────────────────────────────────── */
+.hab-acciones {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
+
+.hab-acciones .hab-btn {
+  width: 100%;
+}
+
+@media (min-width: 576px) {
+  .hab-acciones {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .hab-acciones .hab-btn {
+    width: auto;
+  }
+}

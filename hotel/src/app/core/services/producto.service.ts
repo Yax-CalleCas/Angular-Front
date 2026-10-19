@@ -6,15 +6,15 @@ import { Producto } from '../models/producto';
 
 @Injectable({ providedIn: 'root' })
 export class ProductoService {
-  private readonly http = inject(HttpClient);
   private readonly url = 'http://localhost:8000/api/producto';
+  private readonly http = inject(HttpClient);
 
   listar(): Observable<ApiResponse<Producto[]>> {
     return this.http.get<ApiResponse<Producto[]>>(`${this.url}/listar`);
   }
 
   buscarPorId(id: number): Observable<ApiResponse<Producto>> {
-    return this.http.get<ApiResponse<Producto>>(`${this.url}/buscar/${id}`);
+    return this.http.get<ApiResponse<Producto>>(`${this.url}/${id}`);
   }
 
   registrar(dto: Producto): Observable<ApiResponse<Producto>> {

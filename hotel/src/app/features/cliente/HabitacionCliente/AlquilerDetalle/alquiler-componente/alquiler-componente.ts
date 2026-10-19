@@ -14,7 +14,7 @@ import { RecepcionService } from '../../../../../core/services/recepcion.service
 
 import { HabitacionResponseDTO } from '../../../../../core/models/Habitacion';
 import { Persona } from '../../../../../core/models/persona.model';
-import { Recepcion } from '../../../../../core/models/recepcion.model';
+import { RecepcionRequestDTO } from '../../../../../core/models/recepcion.model'; // CORREGIDO: Usar Request DTO
 
 @Component({
   selector: 'app-alquiler-componente',
@@ -150,18 +150,15 @@ export class AlquilerComponente implements OnInit {
     const montoIngresado = Number(this.alquilerForm.get('montoPagado')?.value) || 0;
     const total = this.precioTotalCalculado;
 
-    // CORREGIDO: Se ajusta estrictamente a la interfaz Recepcion sin propiedades ajenas
-    const dto: Recepcion = {
-      idHabitacion: this.habitacion.idHabitacion ?? 0,
+    // CORREGIDO: Se ajusta estrictamente a RecepcionRequestDTO que espera el backend al registrar
+    const dto: RecepcionRequestDTO = {
       idCliente: this.persona.idPersona ?? 0,
-      fechaEntrada: this.alquilerForm.getRawValue().fechaIngreso ?? new Date().toISOString(),
+      idHabitacion: this.habitacion.idHabitacion ?? 0,
+      fechaEntrada: this.alquilerForm.getRawValue().fechaIngreso ?? '',
       fechaSalida: this.alquilerForm.get('fechaSalida')?.value ?? '',
-      observacion: this.alquilerForm.get('observaciones')?.value ?? '',
       precioInicial: total ?? 0,
-      adelanto: montoIngresado < total ? montoIngresado : 0,
-      totalPagado: montoIngresado >= total ? total : montoIngresado,
-      precioRestante: Math.max(0, total - montoIngresado),
-      estado: true
+      adelanto: montoIngresado, // Adelanto o monto pagado inicial enviado al registrar
+      observacion: this.alquilerForm.get('observaciones')?.value ?? ''
     };
 
     this.recepcionService.registrar(dto).subscribe({

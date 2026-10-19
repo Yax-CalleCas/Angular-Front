@@ -1,25 +1,40 @@
-export interface Recepcion {
-  idRecepcion?: number;
+export interface RecepcionRequestDTO {
   idCliente: number;
   idHabitacion: number;
-  fechaEntrada: string;
-  fechaSalida: string;
-  fechaSalidaConfirmacion?: string | null;
+  fechaEntrada: string; // Formato 'YYYY-MM-DD'
+  fechaSalida: string;  // Formato 'YYYY-MM-DD'
   precioInicial: number;
   adelanto?: number;
-  precioRestante?: number;
-  totalPagado?: number;
-  costoPenalidad?: number;
-  observacion?: string | null;
-  estado: boolean;
+  observacion?: string;
+}
 
-  // Propiedades opcionales para vistas detalladas (Cliente / Habitación incrustados)
-  numero?: string;
-  categoriaNombre?: string;
-  pisoNombre?: string;
-  tipoDocumento?: string;
-  documento?: string;
-  nombre?: string;
-  apellido?: string;
-  correo?: string;
+export interface SalidaRequest {
+  idRecepcion: number;
+  costoPenalidad?: number;
+  observacion?: string;
+}
+
+export interface RecepcionResponseDTO {
+  idRecepcion: number;
+  idCliente: number;
+  idHabitacion: number;
+  fechaEntrada: string;           // Mapeado desde LocalDate
+  fechaSalida: string;            // Mapeado desde LocalDate
+  fechaSalidaConfirmacion?: string | null; // Mapeado desde LocalDateTime
+  precioInicial: number;
+  adelanto: number;
+  precioRestante: number;
+  totalPagado: number;
+  costoPenalidad: number;
+  observacion?: string | null;
+  estado: boolean;                // true = Activa, false = Finalizada
+  fechaCreacion: string;          // Mapeado desde LocalDateTime
+  fechaActualizacion?: string | null;
+
+  // Opcionales de apoyo para tablas y listados visuales en Angular:
+  numeroHabitacion?: string;
+  nombreCliente?: string;
+  apellidoCliente?: string;
+  documentoCliente?: string;
+  tipoDocumentoCliente?: string;
 }

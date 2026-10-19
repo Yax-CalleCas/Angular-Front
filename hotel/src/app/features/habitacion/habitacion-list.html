@@ -1,119 +1,124 @@
-<div class="container-fluid py-4 font-ui">
-  <!-- ── Encabezado y Botón de Acción ── -->
-  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-    <div>
-      <h2 class="h3 fw-bold text-tinta mb-1 font-display">Gestión de Habitaciones</h2>
-      <p class="text-garua text-xs mb-0">Administra el catálogo y el estado de las habitaciones de forma centralizada.</p>
+<div class="container-fluid py-4 font-ui hab-page">
+
+  <!-- ── Encabezado y botón de acción ── -->
+  <header class="hab-header">
+    <div class="hab-header__texto">
+      <h2 class="hab-title font-display text-tinta">Gestión de Habitaciones</h2>
+      <p class="hab-subtitle text-garua">Administra el catálogo y el estado de las habitaciones de forma centralizada.</p>
     </div>
     <div>
-      <button type="button" class="btn btn-primary-sillar d-flex align-items-center gap-2 shadow-sm px-4 py-2 text-xs" (click)="abrir()">
+      <button type="button" class="btn btn-primary-sillar hab-btn" (click)="abrir()">
         <i class="bi bi-plus-lg" aria-hidden="true"></i>
         <span>Nueva Habitación</span>
       </button>
     </div>
-  </div>
+  </header>
 
-  <!-- ── Tarjeta Filtro y Tabla ── -->
-  <div class="card border border-junta shadow-sm rounded-3 bg-sillar-blanco">
-    <div class="card-body p-4">
+  <!-- ── Tarjeta: filtro y tabla ── -->
+  <div class="card hab-card border border-junta bg-sillar-blanco">
+    <div class="card-body hab-card__body">
 
-      <!-- Controles de Filtro -->
-      <div class="row mb-4">
-        <div class="col-12 col-md-6 col-lg-4">
-          <div class="input-group">
-            <span class="input-group-text bg-white border-end-0 border-junta text-garua">
-              <i class="bi bi-search" aria-hidden="true"></i>
-            </span>
-            <input
-              type="search"
-              class="form-control border-start-0 ps-0 text-xs border-junta shadow-none"
-              placeholder="Buscar por número o categoría..."
-              aria-label="Buscar habitaciones por número o categoría"
-              [ngModel]="filtroTexto()"
-              (ngModelChange)="filtroTexto.set($event); paginaActual.set(1)"
-            />
-          </div>
+      <!-- Controles de filtro -->
+      <div class="hab-toolbar">
+        <div class="input-group hab-search">
+          <span class="input-group-text bg-white border-end-0 border-junta text-garua">
+            <i class="bi bi-search" aria-hidden="true"></i>
+          </span>
+          <input
+            type="search"
+            class="form-control border-start-0 ps-0 border-junta shadow-none"
+            placeholder="Buscar por número o categoría..."
+            aria-label="Buscar habitaciones por número o categoría"
+            [ngModel]="filtroTexto()"
+            (ngModelChange)="filtroTexto.set($event); paginaActual.set(1)"
+          />
         </div>
       </div>
 
-      <!-- Spinner Cargando -->
+      <!-- Spinner cargando -->
       @if (isLoading()) {
-        <div class="text-center py-5">
-          <div class="spinner-border text-cochinilla" role="status" style="width: 2rem; height: 2rem;">
+        <div class="hab-loading">
+          <div class="spinner-border hab-spinner text-cochinilla" role="status">
             <span class="visually-hidden">Cargando...</span>
           </div>
-          <p class="text-garua text-xs mt-2 mb-0">Sincronizando habitaciones...</p>
+          <p class="text-garua mt-2 mb-0">Sincronizando habitaciones...</p>
         </div>
       } @else {
-       <!-- Tabla de Datos -->
-        <div class="table-responsive rounded border border-junta bg-white">
-          <table class="table table-hover align-middle mb-0 text-xs">
+        <!-- Tabla de datos -->
+        <div class="table-responsive hab-tablewrap border border-junta bg-white">
+          <table class="table table-hover align-middle mb-0 hab-table">
             <thead class="bg-sillar-piedra text-tinta border-bottom border-junta">
               <tr>
-                <th scope="col" class="py-3 px-3" style="width: 90px;">Número</th>
-                <th scope="col" class="py-3 px-3">Categoría</th>
-                <th scope="col" class="py-3 px-3">Piso</th>
-                <th scope="col" class="py-3 px-3">Estado</th>
-                <th scope="col" class="py-3 px-3">Tarifa / Noche</th>
-                <th scope="col" class="py-3 px-3 text-center" style="width: 70px;">Fotos</th>
-                <th scope="col" class="py-3 px-3 text-end" style="width: 140px;">Acciones</th>
+                <th scope="col" class="hab-col-num">Número</th>
+                <th scope="col">Categoría</th>
+                <th scope="col">Piso</th>
+                <th scope="col">Estado</th>
+                <th scope="col" class="text-end">Tarifa / Noche</th>
+                <th scope="col" class="text-center hab-col-fotos">Fotos</th>
+                <th scope="col" class="text-end hab-col-acciones">Acciones</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-junta">
+            <tbody>
               @for (h of habitacionesPaginadas(); track h.idHabitacion || h.numero) {
                 <tr>
                   <!-- Número -->
-                  <td class="px-3 py-3 font-mono fw-bold text-tinta fs-6">{{ h.numero }}</td>
+                  <td>
+                    <span class="hab-placa font-mono text-tinta border border-junta">{{ h.numero }}</span>
+                  </td>
 
-                  <!-- Categoría (Objeto anidado) -->
-                  <td class="px-3 py-3">
-                    <span class="badge bg-sillar-piedra text-tinta border border-junta fw-normal px-2 py-1">
-                     {{ h.categoria.descripcion || 'N/A' }}
+                  <!-- Categoría (objeto anidado) -->
+                  <td>
+                    <span class="hab-chip bg-sillar-piedra text-tinta border border-junta">
+                      {{ h.categoria.descripcion || 'N/A' }}
                     </span>
                   </td>
 
-                  <!-- Piso (Objeto anidado) -->
-                  <td class="px-3 py-3 text-garua">{{ h.piso?.descripcion || 'N/A' }}</td>
+                  <!-- Piso (objeto anidado) -->
+                  <td class="text-garua">{{ h.piso?.descripcion || 'N/A' }}</td>
 
-                  <!-- Estado (Objeto anidado estadoHabitacion) -->
-                  <td class="px-3 py-3">
-                    <span [class]="'badge rounded-pill fw-medium px-2.5 py-1 ' + getEstadoBadgeClass(h.estadoHabitacion.descripcion)">
+                  <!-- Estado (objeto anidado estadoHabitacion) -->
+                  <td>
+                    <span [class]="'hab-estado ' + getEstadoBadgeClass(h.estadoHabitacion.descripcion)">
+                      <span class="hab-estado__punto" aria-hidden="true"></span>
                       {{ h.estadoHabitacion.descripcion || 'N/A' }}
                     </span>
                   </td>
 
                   <!-- Tarifa -->
-                  <td class="px-3 py-3 font-mono fw-semibold text-success tabular-nums">
-                    S/ {{ h.precio | number:'1.2-2' }}
+                  <td class="text-end">
+                    <span class="hab-precio font-mono text-tinta"><span class="hab-moneda text-garua">S/</span> {{ h.precio | number:'1.2-2' }}</span>
                   </td>
 
-                  <!-- Fotos (Lista de imágenes) -->
-                  <td class="px-3 py-3 text-center">
-                    <span class="badge bg-sillar-piedra text-garua rounded-circle px-2 py-1 font-mono">
+                  <!-- Fotos (lista de imágenes) -->
+                  <td class="text-center">
+                    <span class="hab-fotos text-garua font-mono">
+                      <i class="bi bi-images" aria-hidden="true"></i>
                       {{ h.imagenes.length || 0 }}
+                      <span class="visually-hidden">fotos</span>
                     </span>
                   </td>
 
                   <!-- Acciones -->
-                  <td class="px-3 py-3 text-end">
+                  <td class="text-end">
                     <div class="dropdown">
                       <button
-                        class="btn btn-sm btn-secondary-sillar dropdown-toggle text-xs py-1 px-2"
+                        class="btn btn-sm btn-secondary-sillar dropdown-toggle hab-btn hab-btn--sm"
                         type="button"
                         data-bs-toggle="dropdown"
+                        data-bs-popper-config='{"strategy":"fixed"}'
                         aria-expanded="false"
                         [attr.aria-label]="'Opciones de la habitación ' + h.numero">
                         Opciones
                       </button>
-                      <ul class="dropdown-menu dropdown-menu-end shadow-sm border border-junta text-xs">
+                      <ul class="dropdown-menu dropdown-menu-end hab-menu border border-junta">
                         <li>
-                          <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-1.5" (click)="abrir(h)">
+                          <button type="button" class="dropdown-item" (click)="abrir(h)">
                             <i class="bi bi-pencil text-primary" aria-hidden="true"></i> Editar
                           </button>
                         </li>
                         <li><hr class="dropdown-divider border-junta"></li>
                         <li>
-                          <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-1.5 text-danger" (click)="eliminar(h)">
+                          <button type="button" class="dropdown-item hab-menu__item--peligro text-danger" (click)="eliminar(h)">
                             <i class="bi bi-trash" aria-hidden="true"></i> Dar de baja
                           </button>
                         </li>
@@ -123,8 +128,8 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="7" class="text-center py-5 text-garua">
-                    <i class="bi bi-inbox fs-2 d-block mb-2 text-muted" aria-hidden="true"></i>
+                  <td colspan="7" class="hab-empty text-garua">
+                    <i class="bi bi-inbox text-muted" aria-hidden="true"></i>
                     No se encontraron habitaciones registradas.
                   </td>
                 </tr>
@@ -133,14 +138,12 @@
           </table>
         </div>
 
-
-
         <!-- Paginación -->
         @if (totalPaginas() > 1) {
-          <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top border-junta text-xs text-garua">
+          <div class="hab-footer border-top border-junta text-garua">
             <span>Página <strong class="text-tinta">{{ paginaActual() }}</strong> de <strong class="text-tinta">{{ totalPaginas() }}</strong></span>
             <nav aria-label="Paginación de habitaciones">
-              <ul class="pagination pagination-sm mb-0">
+              <ul class="pagination pagination-sm mb-0 hab-pagination">
                 <li class="page-item" [class.disabled]="paginaActual() === 1">
                   <button type="button" class="page-link border-junta text-tinta bg-white" [disabled]="paginaActual() === 1" (click)="cambiarPagina(paginaActual() - 1)">Anterior</button>
                 </li>
@@ -166,37 +169,37 @@
 </div>
 
 <!-- ───────────────────────── Modal Registrar / Editar ───────────────────────── -->
-<div #modalHab class="modal fade" id="modalHabitacion" tabindex="-1" aria-labelledby="modalHabitacionTitulo" aria-hidden="true" data-bs-backdrop="static">
+<div #modalHab class="modal fade hab-modal" id="modalHabitacion" tabindex="-1" aria-labelledby="modalHabitacionTitulo" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content border border-junta shadow-dialog bg-sillar-blanco rounded-3">
+    <div class="modal-content border border-junta shadow-dialog bg-sillar-blanco">
 
-      <div class="modal-header bg-sillar-piedra border-bottom border-junta py-3 px-4">
-        <h5 id="modalHabitacionTitulo" class="modal-title fw-bold font-display text-tinta fs-5">
+      <div class="modal-header bg-sillar-piedra border-bottom border-junta">
+        <h5 id="modalHabitacionTitulo" class="modal-title hab-modal__titulo font-display text-tinta">
           {{ idHabitacionEditando() ? 'Editar Habitación' : 'Nueva Habitación' }}
         </h5>
-        <button type="button" class="btn-close shadow-none" (click)="cerrarModal()" aria-label="Cerrar"></button>
+        <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Cerrar"></button>
       </div>
 
-      <div class="modal-body p-4 text-xs font-ui">
+      <div class="modal-body font-ui">
         <form #formHab="ngForm" (ngSubmit)="guardar()">
           <div class="row g-3">
 
             <!-- Número -->
             <div class="col-md-6">
-              <label for="habNumero" class="form-label fw-semibold text-tinta">Número <span class="text-cochinilla">*</span></label>
-              <input id="habNumero" type="text" class="form-control text-xs border-junta shadow-none" required name="numero" [ngModel]="habitacionForm().numero" (ngModelChange)="habitacionForm.update(f => ({...f, numero: $event}))" placeholder="Ej. 101" />
+              <label for="habNumero" class="form-label hab-label text-tinta">Número <span class="text-cochinilla" aria-hidden="true">*</span></label>
+              <input id="habNumero" type="text" class="form-control hab-control border-junta" required name="numero" [ngModel]="habitacionForm().numero" (ngModelChange)="habitacionForm.update(f => ({...f, numero: $event}))" placeholder="Ej. 101" />
             </div>
 
             <!-- Precio -->
             <div class="col-md-6">
-              <label for="habPrecio" class="form-label fw-semibold text-tinta">Precio / Noche (S/) <span class="text-cochinilla">*</span></label>
-              <input id="habPrecio" type="number" class="form-control text-xs border-junta shadow-none" required min="1" step="0.01" name="precio" [ngModel]="habitacionForm().precio" (ngModelChange)="habitacionForm.update(f => ({...f, precio: $event}))" />
+              <label for="habPrecio" class="form-label hab-label text-tinta">Precio / Noche (S/) <span class="text-cochinilla" aria-hidden="true">*</span></label>
+              <input id="habPrecio" type="number" class="form-control hab-control border-junta" required min="1" step="0.01" name="precio" [ngModel]="habitacionForm().precio" (ngModelChange)="habitacionForm.update(f => ({...f, precio: $event}))" />
             </div>
 
             <!-- Categoría -->
             <div class="col-md-6">
-              <label for="habCategoria" class="form-label fw-semibold text-tinta">Categoría <span class="text-cochinilla">*</span></label>
-              <select id="habCategoria" class="form-select text-xs border-junta shadow-none" required name="idCategoria" [ngModel]="habitacionForm().idCategoria" (ngModelChange)="habitacionForm.update(f => ({...f, idCategoria: +$event}))">
+              <label for="habCategoria" class="form-label hab-label text-tinta">Categoría <span class="text-cochinilla" aria-hidden="true">*</span></label>
+              <select id="habCategoria" class="form-select hab-control border-junta" required name="idCategoria" [ngModel]="habitacionForm().idCategoria" (ngModelChange)="habitacionForm.update(f => ({...f, idCategoria: +$event}))">
                 <option [ngValue]="null" disabled>Seleccione categoría</option>
                 @for (c of categorias(); track c.idCategoria) {
                   <option [ngValue]="c.idCategoria">{{ c.descripcion }}</option>
@@ -206,8 +209,8 @@
 
             <!-- Piso -->
             <div class="col-md-6">
-              <label for="habPiso" class="form-label fw-semibold text-tinta">Piso <span class="text-cochinilla">*</span></label>
-              <select id="habPiso" class="form-select text-xs border-junta shadow-none" required name="idPiso" [ngModel]="habitacionForm().idPiso" (ngModelChange)="habitacionForm.update(f => ({...f, idPiso: +$event}))">
+              <label for="habPiso" class="form-label hab-label text-tinta">Piso <span class="text-cochinilla" aria-hidden="true">*</span></label>
+              <select id="habPiso" class="form-select hab-control border-junta" required name="idPiso" [ngModel]="habitacionForm().idPiso" (ngModelChange)="habitacionForm.update(f => ({...f, idPiso: +$event}))">
                 <option [ngValue]="null" disabled>Seleccione piso</option>
                 @for (p of pisos(); track p.idPiso) {
                   <option [ngValue]="p.idPiso">{{ p.descripcion }}</option>
@@ -217,8 +220,8 @@
 
             <!-- Estado operativo -->
             <div class="col-md-6">
-              <label for="habEstado" class="form-label fw-semibold text-tinta">Estado Operativo <span class="text-cochinilla">*</span></label>
-              <select id="habEstado" class="form-select text-xs border-junta shadow-none" required name="idEstadoHabitacion" [ngModel]="habitacionForm().idEstadoHabitacion" (ngModelChange)="habitacionForm.update(f => ({...f, idEstadoHabitacion: +$event}))">
+              <label for="habEstado" class="form-label hab-label text-tinta">Estado Operativo <span class="text-cochinilla" aria-hidden="true">*</span></label>
+              <select id="habEstado" class="form-select hab-control border-junta" required name="idEstadoHabitacion" [ngModel]="habitacionForm().idEstadoHabitacion" (ngModelChange)="habitacionForm.update(f => ({...f, idEstadoHabitacion: +$event}))">
                 <option [ngValue]="null" disabled>Seleccione estado</option>
                 @for (est of estados(); track est.idEstadoHabitacion) {
                   <option [ngValue]="est.idEstadoHabitacion">{{ est.descripcion }}</option>
@@ -228,58 +231,59 @@
 
             <!-- Detalles -->
             <div class="col-12">
-              <label for="habDetalle" class="form-label fw-semibold text-tinta">Detalles</label>
-              <textarea id="habDetalle" class="form-control text-xs border-junta shadow-none" rows="2" name="detalle" [ngModel]="habitacionForm().detalle" (ngModelChange)="habitacionForm.update(f => ({...f, detalle: $event}))" placeholder="Ej. Vista a la calle, Cama King..."></textarea>
+              <label for="habDetalle" class="form-label hab-label text-tinta">Detalles</label>
+              <textarea id="habDetalle" class="form-control hab-control border-junta" rows="2" name="detalle" [ngModel]="habitacionForm().detalle" (ngModelChange)="habitacionForm.update(f => ({...f, detalle: $event}))" placeholder="Ej. Vista a la calle, Cama King..."></textarea>
             </div>
 
-            <!-- Galería de Fotos -->
+            <!-- Galería de fotos -->
             <div class="col-12 mt-3">
-              <div class="form-label fw-semibold d-flex justify-content-between text-tinta">
-                <span>Fotografías (Máx. {{ maxImagenes }})</span>
-                <span class="text-garua font-mono">{{ habitacionForm().urlsImagenes?.length || 0 }} / {{ maxImagenes }}</span>
-              </div>
+              <div class="hab-galeria-bloque border-top border-junta">
+                <div class="hab-galeria-cabecera text-tinta">
+                  <span class="hab-label">Fotografías (Máx. {{ maxImagenes }})</span>
+                  <span class="text-garua font-mono hab-contador">{{ habitacionForm().urlsImagenes?.length || 0 }} / {{ maxImagenes }}</span>
+                </div>
 
-              <div class="d-flex flex-wrap gap-2 mb-2">
-                @for (imgUrl of habitacionForm().urlsImagenes || []; track $index) {
-                  <div class="position-relative border border-junta rounded overflow-hidden bg-white shadow-sm" style="width: 85px; height: 85px;">
-                    <img [src]="imgUrl" class="w-100 h-100 object-fit-cover" [alt]="'Foto ' + ($index + 1) + ' de la habitación'" />
-                    <button
-                      type="button"
-                      class="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center"
-                      style="width: 22px; height: 22px; border-radius: 0 0 0 4px; background-color: #B3261E; border:none;"
-                      [attr.aria-label]="'Eliminar foto ' + ($index + 1)"
-                      (click)="eliminarImagen($index)">
-                      <i class="bi bi-x text-white" aria-hidden="true"></i>
-                    </button>
+                <div class="hab-galeria">
+                  @for (imgUrl of habitacionForm().urlsImagenes || []; track $index) {
+                    <div class="hab-foto border border-junta">
+                      <img [src]="imgUrl" [alt]="'Foto ' + ($index + 1) + ' de la habitación'" />
+                      <button
+                        type="button"
+                        class="hab-foto__quitar"
+                        [attr.aria-label]="'Eliminar foto ' + ($index + 1)"
+                        (click)="eliminarImagen($index)">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  }
+
+                  @if ((habitacionForm().urlsImagenes?.length || 0) < maxImagenes) {
+                    <label class="hab-subir border border-junta text-garua">
+                      <i class="bi bi-camera" aria-hidden="true"></i>
+                      <span>Subir foto</span>
+                      <input type="file" class="visually-hidden" accept="image/*" multiple (change)="onArchivosSeleccionados($event)" [disabled]="procesandoImagenes()" />
+                    </label>
+                  }
+                </div>
+
+                @if (procesandoImagenes()) {
+                  <div class="small text-primary d-flex align-items-center gap-2 mt-2" role="status">
+                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                    <span>Procesando imágenes...</span>
                   </div>
                 }
-
-                @if ((habitacionForm().urlsImagenes?.length || 0) < maxImagenes) {
-                  <label class="border border-2 border-dashed border-junta rounded d-flex flex-column align-items-center justify-content-center text-garua bg-white cursor-pointer hover:bg-sillar-piedra transition-all" style="width: 85px; height: 85px;">
-                    <i class="bi bi-camera fs-4 mb-1" aria-hidden="true"></i>
-                    <span style="font-size: 10px;" class="fw-medium">Subir foto</span>
-                    <input type="file" class="d-none" accept="image/*" multiple (change)="onArchivosSeleccionados($event)" [disabled]="procesandoImagenes()" />
-                  </label>
-                }
               </div>
-
-              @if (procesandoImagenes()) {
-                <div class="small text-primary d-flex align-items-center gap-1 mt-1" role="status">
-                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                  <span>Procesando imágenes...</span>
-                </div>
-              }
             </div>
 
           </div>
 
-          <div class="d-flex justify-content-end gap-2 border-top border-junta mt-4 pt-3">
-            <button type="button" class="btn btn-secondary-sillar text-xs px-3 py-2" (click)="cerrarModal()" [disabled]="isProcessing()">
+          <div class="hab-acciones border-top border-junta">
+            <button type="button" class="btn btn-secondary-sillar hab-btn" (click)="cerrarModal()" [disabled]="isProcessing()">
               Cancelar
             </button>
-            <button type="submit" class="btn btn-primary-sillar text-xs px-4 py-2" [disabled]="formHab.invalid || isProcessing()">
+            <button type="submit" class="btn btn-primary-sillar hab-btn" [disabled]="formHab.invalid || isProcessing()">
               @if (isProcessing()) {
-                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
               }
               Guardar Habitación
             </button>

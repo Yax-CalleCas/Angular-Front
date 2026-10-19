@@ -20,11 +20,13 @@
     </div>
   </div>
 
+  <!-- Estado de Carga -->
   <div *ngIf="isLoading()" class="text-center py-5">
     <div class="spinner-border text-danger" role="status"></div>
     <p class="text-muted mt-2 small">Cargando habitaciones ocupadas...</p>
   </div>
 
+  <!-- Listado de Habitaciones Ocupadas -->
   <div class="row g-3" *ngIf="!isLoading()">
     <div class="col-xl-3 col-lg-4 col-md-6" *ngFor="let h of habitacionesFiltradas(); trackBy: trackByHabitacion">
       <div class="card h-100 border-0 shadow-sm room-card">
@@ -32,13 +34,17 @@
           <div class="d-flex justify-content-between align-items-start mb-3">
             <h3 class="fw-bold mb-0 text-primary">Nº {{ h.numero }}</h3>
             <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">
-              {{ h.estado }}
+              {{ h.estadoHabitacion.descripcion || 'Ocupado' }}
             </span>
           </div>
 
           <ul class="list-unstyled text-secondary small mb-4">
-            <li class="mb-2"><i class="bi bi-tag me-2 text-primary"></i><strong>Cat:</strong> {{ h.categoria }}</li>
-            <li><i class="bi bi-cash-stack me-2 text-primary"></i><strong>Tarifa:</strong> S/. {{ h.precio | number:'1.2-2' }}</li>
+            <li class="mb-2">
+              <i class="bi bi-tag me-2 text-primary"></i><strong>Cat:</strong> {{ h.categoria?.descripcion || 'N/A' }}
+            </li>
+            <li>
+              <i class="bi bi-cash-stack me-2 text-primary"></i><strong>Tarifa:</strong> S/. {{ h.precio | number:'1.2-2' }}
+            </li>
           </ul>
 
           <button (click)="procesarSalidaVenta(h)" class="btn btn-danger w-100 mt-auto fw-bold py-2">
@@ -49,6 +55,7 @@
     </div>
   </div>
 
+  <!-- Mensaje si no hay habitaciones ocupadas -->
   <div class="text-center py-5" *ngIf="!isLoading() && habitacionesFiltradas().length === 0">
     <div class="display-1 text-success opacity-25 mb-3"><i class="bi bi-house-check"></i></div>
     <h5 class="text-muted">¡Todo listo!</h5>

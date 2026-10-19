@@ -1,13 +1,14 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import Swal from 'sweetalert2';
 
 import { RecepcionService } from '../../../core/services/recepcion.service';
 import { VentaService } from '../../../core/services/venta.service';
 import { Venta } from '../../../core/models/Venta';
 import { DetalleVenta } from '../../../core/models/detalleventa';
+import { SalidaRequest, RecepcionResponseDTO } from '../../../core/models/recepcion.model';
 
 export interface ItemServicio {
   producto: string;
@@ -20,7 +21,7 @@ export interface ItemServicio {
 @Component({
   selector: 'app-procesarsalida',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './procesarsalida.html'
 })
 export class Procesarsalida implements OnInit {
@@ -30,13 +31,13 @@ export class Procesarsalida implements OnInit {
   private readonly ventaService = inject(VentaService);
 
   isLoading = signal(false);
-  datosHospedaje = signal<any | null>(null);
+  datosHospedaje = signal<RecepcionResponseDTO | null>(null);
   servicios = signal<ItemServicio[]>([]);
   costoPenalidad = signal<number>(0);
 
   totalConsumosPendientes = computed(() =>
     this.servicios().reduce((sum, s) =>
-      s.estadoVenta !== 'PAGADO' ? sum + s.subTotal : sum, 0
+      s.estadoVenta !== 'PAGADO' ? sum + Number(s.subTotal || 0) : sum, 0
     )
   );
 
@@ -47,92 +48,107 @@ export class Procesarsalida implements OnInit {
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
-    if (id) this.cargarDatos(id);
+    if (id) {
+      this.cargarDatos(id);
+    } else {
+      this.isLoading.set(false);
+      Swal.fire('Error', 'ID de habitación o recepción no válido', 'error');
+    }
   }
 
   cargarDatos(idHabitacion: number): void {
     this.isLoading.set(true);
     this.recService.buscarActivaPorHabitacion(idHabitacion).subscribe({
       next: (res: any) => {
-        if (res?.data) {
-          this.datosHospedaje.set(res.data);
-          this.cargarVentas(res.data.idRecepcion);
+        const data = res?.data ?? res;
+        if (data) {
+          this.datosHospedaje.set(data);
+          // Si el DTO ya trae la penalidad inicial grabada, la asignamos
+          if (data.costoPenalidad) {
+            this.costoPenalidad.set(Number(data.costoPenalidad));
+          }
+          this.cargarVentas(data.idRecepcion);
         } else {
           this.isLoading.set(false);
-          Swal.fire('Error', 'No se encontró recepción activa', 'error');
+          Swal.fire('Error', 'No se encontró recepción activa para esta habitación', 'error');
         }
       },
       error: () => {
         this.isLoading.set(false);
-        Swal.fire('Error', 'Error al cargar los datos', 'error');
+        Swal.fire('Error', 'Error al cargar los datos del hospedaje', 'error');
       }
     });
   }
 
   private cargarVentas(idRecepcion: number): void {
     this.ventaService.buscarPorRecepcion(idRecepcion).subscribe({
-      next: (res) => {
-        const listaVentas: Venta[] = res?.data ?? [];
+      next: (res: any) => {
+        const listaVentas: Venta[] = res?.data ?? res ?? [];
 
         const serviciosMapeados: ItemServicio[] = listaVentas.flatMap((venta: Venta) =>
-          (venta.detalles ?? []).map((d: DetalleVenta) => ({
-
-            producto: d.nombreProducto ?? 'Producto',
-            cantidad: d.cantidad,
-            precioUnitario: d.precioUnitario,
+          (venta.detalleVentas ?? []).map((d: DetalleVenta) => ({
+            producto: d.nombreProducto ?? 'Producto sin nombre',
+            cantidad: Number(d.cantidad || 0),
+            precioUnitario: Number(d.precioUnitario || 0),
             estadoVenta: (venta.estado as 'PAGADO' | 'PENDIENTE' | 'DEBE'),
-            subTotal: d.subTotal
+            subTotal: Number(d.subTotal || 0)
           }))
         );
+
         this.servicios.set(serviciosMapeados);
         this.isLoading.set(false);
       },
       error: (err) => {
-        console.error(err);
+        console.error('Error al cargar consumos/ventas:', err);
         this.isLoading.set(false);
       }
     });
   }
-finalizarCheckOut(): void {
-  const h = this.datosHospedaje();
-  if (!h || !h.idRecepcion) {
-    Swal.fire('Error', 'Datos de recepción no válidos', 'error');
-    return;
+
+  actualizarPenalidad(valor: unknown): void {
+    const num = Number(valor);
+    this.costoPenalidad.set(isNaN(num) ? 0 : num);
   }
 
-  Swal.fire({
-    title: 'Confirmar Salida',
-    text: `Total a pagar: S/ ${this.totalNetoAPagar().toFixed(2)}`,
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'Registrar',
-    cancelButtonText: 'Cancelar'
-  }).then(result => {
-    if (result.isConfirmed) {
-      this.isLoading.set(true);
-
-      this.recService.registrarSalida({
-        idRecepcion: h.idRecepcion,
-        idHabitacion: h.idHabitacion,
-        costoPenalidad: this.costoPenalidad(),
-        totalPagado: this.totalNetoAPagar()
-      }).subscribe({
-        next: () => {
-          this.isLoading.set(false); // IMPORTANTE: detener el estado de carga
-          Swal.fire('Éxito', 'Salida procesada correctamente', 'success')
-            .then(() => {
-              this.router.navigate(['/admin/resumensalida', h.idRecepcion]);
-            });
-        },
-        error: (err) => {
-          this.isLoading.set(false);
-          // Mejoramos el manejo de error para mostrar el mensaje detallado del backend
-          const mensaje = err.error?.message || err.message || 'Error al procesar salida';
-          Swal.fire('Error', mensaje, 'error');
-        }
-      });
+  finalizarCheckOut(): void {
+    const h = this.datosHospedaje();
+    if (!h || !h.idRecepcion) {
+      Swal.fire('Error', 'Datos de recepción no válidos', 'error');
+      return;
     }
-  });
 
-}
+    Swal.fire({
+      title: 'Confirmar Salida y Liberación (Check-out)',
+      text: `Se procesará el cierre con un total neto de: S/ ${this.totalNetoAPagar().toFixed(2)}. La habitación pasará a mantenimiento/disponible.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, Finalizar Check-Out',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.isLoading.set(true);
+
+        const payload: SalidaRequest = {
+          idRecepcion: h.idRecepcion,
+          costoPenalidad: this.costoPenalidad(),
+          observacion: `Check-out procesado. Total neto cancelado: S/. ${this.totalNetoAPagar().toFixed(2)}`
+        };
+
+        this.recService.registrarSalida(payload).subscribe({
+          next: () => {
+            this.isLoading.set(false);
+            Swal.fire('Éxito', 'Salida procesada y habitación liberada correctamente', 'success')
+              .then(() => {
+                this.router.navigate(['/admin/resumensalida', h.idRecepcion]);
+              });
+          },
+          error: (err) => {
+            this.isLoading.set(false);
+            const mensaje = err.error?.message || err.message || 'Error al procesar la salida';
+            Swal.fire('Error', mensaje, 'error');
+          }
+        });
+      }
+    });
+  }
 }

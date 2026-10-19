@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { RecepcionService } from '../../../core/services/recepcion.service';
-import { Recepcion } from '../../../core/models/recepcion.model';
+import { RecepcionResponseDTO } from '../../../core/models/recepcion.model';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -12,13 +12,13 @@ import { AuthService } from '../../../core/services/auth.service';
   imports: [CommonModule],
   templateUrl: './listahabitacionesocupadascliente.html',
 })
-export class ClientehabitacionesdISPONIBLES implements OnInit {
+export class ClienteHabitacionesDisponiblesComponent implements OnInit {
 
   private readonly recepcionService = inject(RecepcionService);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
 
-  habitacionesActivas = signal<Recepcion[]>([]);
+  habitacionesActivas = signal<RecepcionResponseDTO[]>([]);
   isLoading = signal(true);
 
   ngOnInit(): void {
@@ -26,7 +26,6 @@ export class ClientehabitacionesdISPONIBLES implements OnInit {
   }
 
   private cargarHabitacionesDelCliente(): void {
-
     const idPersona = Number(this.authService.getUserId());
 
     if (!Number.isFinite(idPersona) || idPersona <= 0) {
@@ -57,8 +56,7 @@ export class ClientehabitacionesdISPONIBLES implements OnInit {
     });
   }
 
-  irAlCarrito(habitacion: Recepcion): void {
-
+  irAlCarrito(habitacion: RecepcionResponseDTO): void {
     const idRecepcion = habitacion?.idRecepcion;
 
     if (!Number.isFinite(idRecepcion)) return;
@@ -70,7 +68,7 @@ export class ClientehabitacionesdISPONIBLES implements OnInit {
     });
   }
 
-  trackById(index: number, item: Recepcion): number {
+  trackById(index: number, item: RecepcionResponseDTO): number {
     return item.idRecepcion ?? index;
   }
 }

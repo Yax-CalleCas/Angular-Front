@@ -143,7 +143,7 @@ export const routes: Routes = [
     },
     {
       path: 'habitacionesocupadasCliente',
-      loadComponent: () => import('./features/cliente/clientehabitacionesocupadas/listahabitacionesocupadascliente').then(m => m.ClientehabitacionesdISPONIBLES)
+      loadComponent: () => import('./features/cliente/clientehabitacionesocupadas/listahabitacionesocupadascliente').then(m => m.ClienteHabitacionesDisponiblesComponent)
     }
   ]
 },

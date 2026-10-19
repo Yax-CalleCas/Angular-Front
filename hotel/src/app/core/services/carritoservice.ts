@@ -2,14 +2,15 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap } from 'rxjs';
 import { Carrito } from '../models/Carrito';
+import { ApiResponse } from '../models/ApiResponse';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CarritoService {
 
+  private readonly url = 'http://localhost:8000/api/carrito';
   private readonly http = inject(HttpClient);
-  private readonly url = 'http://localhost:8081/api/carrito';
 
   private carritoSubject = new BehaviorSubject<Carrito[]>([]);
   carrito$ = this.carritoSubject.asObservable();
@@ -17,17 +18,16 @@ export class CarritoService {
   // =========================
   // AGREGAR AL CARRITO
   // =========================
-  agregarAlCarrito(idRecepcion: number, idProducto: number, cantidad: number): Observable<any> {
-
+  agregarAlCarrito(idRecepcion: number, idProducto: number, cantidad: number): Observable<ApiResponse<Boolean>> {
     const params = new HttpParams()
       .set('idRecepcion', idRecepcion.toString())
       .set('idProducto', idProducto.toString())
       .set('cantidad', cantidad.toString());
 
-    return this.http.post(
+    return this.http.post<ApiResponse<Boolean>>(
       `${this.url}/agregar`,
       null,
-      { params, responseType: 'text' as 'json' }
+      { params }
     ).pipe(
       tap(() => this.actualizarCarrito(idRecepcion))
     );
@@ -37,11 +37,13 @@ export class CarritoService {
   // CARGAR CARRITO
   // =========================
   actualizarCarrito(idRecepcion: number): void {
-
-    this.http.get<Carrito[]>(
+    this.http.get<ApiResponse<Carrito[]>>(
       `${this.url}/listar/${idRecepcion}`
     ).subscribe({
-      next: (data) => this.carritoSubject.next(data),
+      next: (response) => {
+        // Extraemos la lista del atributo 'data' de la ApiResponse
+        this.carritoSubject.next(response.data ?? []);
+      },
       error: (err) => {
         console.error('Error al cargar carrito:', err);
         this.carritoSubject.next([]);
@@ -52,13 +54,12 @@ export class CarritoService {
   // =========================
   // ELIMINAR PRODUCTO
   // =========================
-  eliminarProducto(idRecepcion: number, idProducto: number): Observable<void> {
-
+  eliminarProducto(idRecepcion: number, idProducto: number): Observable<ApiResponse<void>> {
     const params = new HttpParams()
       .set('idRecepcion', idRecepcion.toString())
       .set('idProducto', idProducto.toString());
 
-    return this.http.delete<void>(
+    return this.http.delete<ApiResponse<void>>(
       `${this.url}/eliminar`,
       { params }
     ).pipe(

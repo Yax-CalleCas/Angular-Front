@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { PisoService } from '../../core/services/piso.service';
-import { Piso } from '../../core/models/piso';
+import { Piso } from '../../core/models/piso'; // Importado directamente del core
 
 @Component({
   selector: 'app-piso',
@@ -11,40 +11,52 @@ import { Piso } from '../../core/models/piso';
   imports: [CommonModule, FormsModule],
   templateUrl: './piso.html',
   styleUrls: ['./piso.css']
-
 })
 export class PisoComponent implements OnInit {
   private readonly service = inject(PisoService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   pisos: Piso[] = [];
-  piso: Piso = this.nuevoModelo();
+  piso: Partial<Piso> = this.nuevoModelo();
   isProcessing = false;
   isLoading = false;
+
+  // Hotel actual por defecto
+  idHotelActual = 1;
 
   ngOnInit(): void {
     this.cargar();
   }
-cargar(): void {
-  this.isLoading = true; // Empieza a cargar
-  this.service.listar().subscribe({
-    next: (res) => {
-      this.pisos = res.data || [];
-      this.isLoading = false; // Termina
-      this.cdr.detectChanges();
-    },
-    error: () => {
-      this.isLoading = false;
-      Swal.fire('Error', '...', 'error');
-    }
-  });
-}
+
+  cargar(): void {
+    this.isLoading = true;
+    this.service.listar().subscribe({
+      next: (res) => {
+        this.pisos = res.data || [];
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoading = false;
+        Swal.fire('Error', 'No se pudieron cargar los pisos', 'error');
+      }
+    });
+  }
 
   guardar(): void {
     this.isProcessing = true;
-    const operacion$ = this.piso.idPiso
-      ? this.service.actualizar(this.piso.idPiso, this.piso)
-      : this.service.registrar(this.piso);
+
+    // Construimos el payload asegurando los tipos requeridos por el backend
+    const payload: Piso = {
+      idPiso: this.piso.idPiso, // Puede ser undefined si es nuevo
+      idHotel: this.piso.idHotel || this.idHotelActual,
+      descripcion: this.piso.descripcion || '',
+      estado: this.piso.estado ?? true
+    };
+
+    const operacion$ = payload.idPiso
+      ? this.service.actualizar(payload.idPiso, payload)
+      : this.service.registrar(payload);
 
     operacion$.subscribe({
       next: () => {
@@ -83,10 +95,14 @@ cargar(): void {
 
   cerrarModal(): void {
     const modalEl = document.getElementById('modalPiso');
-    (window as any).bootstrap.Modal.getInstance(modalEl)?.hide();
+    if (modalEl) (window as any).bootstrap.Modal.getInstance(modalEl)?.hide();
   }
 
-  nuevoModelo(): Piso {
-    return { descripcion: '', estado: true };
+  nuevoModelo(): Partial<Piso> {
+    return {
+      descripcion: '',
+      estado: true,
+      idHotel: this.idHotelActual
+    };
   }
 }
