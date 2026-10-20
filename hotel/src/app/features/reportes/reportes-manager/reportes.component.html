@@ -1,93 +1,169 @@
 <div class="container-fluid p-4">
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <h2 class="card-title mb-4"><i class="bi bi-graph-up-arrow"></i> Reportes del Hotel</h2>
-      <div class="row g-3 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label">Fecha Inicio</label>
-          <input type="datetime-local" class="form-control" [ngModel]="fechaInicio()" (ngModelChange)="fechaInicio.set($event)">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Fecha Fin</label>
-          <input type="datetime-local" class="form-control" [ngModel]="fechaFin()" (ngModelChange)="fechaFin.set($event)">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Tipo de Reporte</label>
-          <select class="form-select" [ngModel]="tipoReporte()" (ngModelChange)="cambiarTipo($event)">
-            <option value="ventas">Ventas</option>
-            <option value="cobros">Cobros</option>
-            <option value="ocupacion">Ocupación</option>
-          </select>
-        </div>
-<div class="col-md-3 d-flex gap-2">
-  <button type="button" class="btn btn-primary flex-grow-1" (click)="generarReporte()" [disabled]="isLoading()">
-    <i class="bi" [ngClass]="isLoading() ? 'bi-hourglass-split' : 'bi-arrow-clockwise'"></i>
-    {{ isLoading() ? 'Procesando...' : 'Actualizar' }}
-  </button>
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="h3 fw-bold text-dark m-0">📊 Módulo de Reportes - Hotel</h2>
 
-  <button type="button" class="btn btn-success" (click)="exportarExcel()" [disabled]="isLoading() || resultados().length === 0" title="Exportar Excel">
-    <i class="bi bi-file-earmark-excel"></i>
-  </button>
+    <!-- Botones de Navegación de Reportes -->
+    <div class="btn-group flex-wrap shadow-sm" role="group">
+      <button type="button" class="btn btn-sm" [ngClass]="tipoReporte() === 'ventas' ? 'btn-primary' : 'btn-outline-primary'" (click)="cambiarTipo('ventas')">🔥 Más Vendidos</button>
+      <button type="button" class="btn btn-sm" [ngClass]="tipoReporte() === 'stockBajo' ? 'btn-primary' : 'btn-outline-primary'" (click)="cambiarTipo('stockBajo')">⚠️ Stock Bajo</button>
+      <button type="button" class="btn btn-sm" [ngClass]="tipoReporte() === 'alquileres' ? 'btn-primary' : 'btn-outline-primary'" (click)="cambiarTipo('alquileres')">🛏️ Alquileres</button>
+      <button type="button" class="btn btn-sm" [ngClass]="tipoReporte() === 'cuentasPorCobrar' ? 'btn-primary' : 'btn-outline-primary'" (click)="cambiarTipo('cuentasPorCobrar')">💰 Cuentas por Cobrar</button>
+      <button type="button" class="btn btn-sm" [ngClass]="tipoReporte() === 'penalidades' ? 'btn-primary' : 'btn-outline-primary'" (click)="cambiarTipo('penalidades')">📋 Penalidades</button>
+    </div>
+  </div>
 
-  <button type="button" class="btn btn-danger" (click)="exportarPDF()" [disabled]="isLoading() || resultados().length === 0" title="Exportar PDF">
-    <i class="bi bi-file-earmark-pdf"></i>
-  </button>
-</div>
+  <!-- Spinner de Carga -->
+  <div *ngIf="isLoading()" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- Mensaje de Error -->
+  <div *ngIf="errorMessage()" class="alert alert-danger shadow-sm" role="alert">
+    {{ errorMessage() }}
+  </div>
+
+  <!-- Resultados de Reportes -->
+  <div *ngIf="!isLoading()" class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+
+        <!-- 1. Tabla: Productos Más Vendidos -->
+        <table *ngIf="tipoReporte() === 'ventas'" class="table table-hover align-middle m-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">ID Producto</th>
+              <th>Nombre del Producto</th>
+              <th class="text-center">Cantidad Vendida</th>
+              <th class="text-end pe-4">Ingreso Generado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of resultados()">
+              <td class="ps-4 text-muted">#{{ item.idProducto }}</td>
+              <td class="fw-semibold text-dark">{{ item.nombreProducto }}</td>
+              <td class="text-center"><span class="badge bg-info text-dark px-3 py-2">{{ item.cantidadVendida }} unids.</span></td>
+              <td class="text-end pe-4 fw-bold text-success">S/. {{ item.ingresoGenerado | number:'1.2-2' }}</td>
+            </tr>
+            <tr *ngIf="resultados().length === 0">
+              <td colspan="4" class="text-center py-5 text-muted">No hay registros de productos más vendidos.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- 2. Tabla: Stock Bajo -->
+        <table *ngIf="tipoReporte() === 'stockBajo'" class="table table-hover align-middle m-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">ID</th>
+              <th>Producto</th>
+              <th>Detalle</th>
+              <th class="text-center">Stock Actual</th>
+              <th class="text-end pe-4">Precio Unitario</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of resultados()">
+              <td class="ps-4 text-muted">#{{ item.idProducto }}</td>
+              <td class="fw-semibold text-dark">{{ item.nombre }}</td>
+              <td class="text-muted small">{{ item.detalle || 'Sin detalles' }}</td>
+              <td class="text-center"><span class="badge bg-danger px-3 py-2">{{ item.cantidad }} unids.</span></td>
+              <td class="text-end pe-4 fw-bold">S/. {{ item.precio | number:'1.2-2' }}</td>
+            </tr>
+            <tr *ngIf="resultados().length === 0">
+              <td colspan="5" class="text-center py-5 text-muted">¡Excelente! No hay productos con stock crítico.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- 3. Tabla: Alquileres de Recepción -->
+        <table *ngIf="tipoReporte() === 'alquileres'" class="table table-hover align-middle m-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">ID Recepción</th>
+              <th>Habitación</th>
+              <th>Cliente</th>
+              <th class="text-center">Fecha Entrada</th>
+              <th class="text-center">Fecha Salida</th>
+              <th class="text-center">Estado</th>
+              <th class="text-end pe-4">Precio Inicial</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of resultados()">
+              <td class="ps-4 text-muted">#{{ item.idRecepcion }}</td>
+              <td class="fw-bold text-primary">Hab. {{ item.numeroHabitacion || item.idHabitacion }}</td>
+              <td>{{ item.nombreCliente || ('Cliente ID: ' + item.idCliente) }}</td>
+              <td class="text-center small">{{ item.fechaEntrada }}</td>
+              <td class="text-center small">{{ item.fechaSalida }}</td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="item.estado ? 'bg-success' : 'bg-secondary'">
+                  {{ item.estado ? 'Activa / En Curso' : 'Finalizada' }}
+                </span>
+              </td>
+              <td class="text-end pe-4 fw-bold text-success">S/. {{ item.precioInicial | number:'1.2-2' }}</td>
+            </tr>
+            <tr *ngIf="resultados().length === 0">
+              <td colspan="7" class="text-center py-5 text-muted">No se encontraron alquileres registrados.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- 4. Tabla: Cuentas por Cobrar -->
+        <table *ngIf="tipoReporte() === 'cuentasPorCobrar'" class="table table-hover align-middle m-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">ID Recepción</th>
+              <th>Habitación</th>
+              <th>Cliente</th>
+              <th class="text-center">Fecha Entrada</th>
+              <th class="text-end">Adelanto</th>
+              <th class="text-end">Costo Penalidad</th>
+              <th class="text-end pe-4">Saldo Restante</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of resultados()">
+              <td class="ps-4 text-muted">#{{ item.idRecepcion }}</td>
+              <td class="fw-bold text-primary">Hab. {{ item.numeroHabitacion || item.idHabitacion }}</td>
+              <td>{{ item.nombreCliente || ('Cliente ID: ' + item.idCliente) }}</td>
+              <td class="text-center small">{{ item.fechaEntrada }}</td>
+              <td class="text-end text-success">S/. {{ item.adelanto | number:'1.2-2' }}</td>
+              <td class="text-end text-danger">S/. {{ item.costoPenalidad | number:'1.2-2' }}</td>
+              <td class="text-end pe-4 fw-bold text-warning-emphasis">S/. {{ item.precioRestante | number:'1.2-2' }}</td>
+            </tr>
+            <tr *ngIf="resultados().length === 0">
+              <td colspan="7" class="text-center py-5 text-muted">No hay cuentas pendientes por cobrar. ¡Todo al día!</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- 5. Vista Especial: Resumen de Penalidades -->
+        <div *ngIf="tipoReporte() === 'penalidades'" class="p-5">
+          <div class="row text-center g-4">
+            <div class="col-md-6">
+              <div class="card bg-light border-0 shadow-sm p-4 rounded-4">
+                <h5 class="text-secondary fw-semibold">Total Penalidades Aplicadas</h5>
+                <h2 class="fw-bold text-primary display-5 mt-2">{{ resumenPenalidadesData()?.totalPenalidadesAplicadas || 0 }}</h2>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card bg-light border-0 shadow-sm p-4 rounded-4">
+                <h5 class="text-secondary fw-semibold">Monto Recaudado por Penalidades</h5>
+                <h2 class="fw-bold text-success display-5 mt-2">S/. {{ (resumenPenalidadesData()?.montoTotalRecaudadoPenalidades || 0) | number:'1.2-2' }}</h2>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
-  </div>
 
-  <div *ngIf="errorMessage()" class="alert alert-danger alert-dismissible fade show">
-    <i class="bi bi-exclamation-triangle-fill"></i> {{ errorMessage() }}
-  </div>
-
-  <div class="card shadow-sm" *ngIf="!isLoading() && resultados().length > 0">
-    <div class="table-responsive">
-      <table class="table table-hover table-striped align-middle mb-0">
-        <thead class="table-primary">
-          <tr [ngSwitch]="tipoReporte()">
-            <ng-container *ngSwitchCase="'ventas'">
-              <th>Producto</th><th>Cantidad</th><th>Subtotal</th>
-            </ng-container>
-            <ng-container *ngSwitchCase="'cobros'">
-              <th>Habitación</th><th>Cliente</th><th>Alojamiento</th><th>Consumos</th><th>Total</th><th>Fecha</th>
-            </ng-container>
-            <ng-container *ngSwitchCase="'ocupacion'">
-              <th>Habitación</th><th>Categoría</th><th>Veces Alquilada</th>
-            </ng-container>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of resultados()">
-            <ng-container [ngSwitch]="tipoReporte()">
-              <ng-container *ngSwitchCase="'ventas'">
-                <td>{{ item.nombreProducto }}</td>
-                <td>{{ item.cantidadTotal }}</td>
-                <td>{{ item.totalIngresado | currency:'PEN':'symbol' }}</td>
-              </ng-container>
-              <ng-container *ngSwitchCase="'cobros'">
-                <td><span class="badge bg-secondary">{{ item.numeroHabitacion }}</span></td>
-                <td>{{ item.nombreCliente }}</td>
-                <td>{{ item.totalAlojamiento | currency:'PEN':'symbol' }}</td>
-                <td>{{ item.totalConsumos | currency:'PEN':'symbol' }}</td>
-                <td class="fw-bold text-primary">{{ item.totalGeneral | currency:'PEN':'symbol' }}</td>
-                <td>{{ item.fechaCierre | date:'short' }}</td>
-              </ng-container>
-              <ng-container *ngSwitchCase="'ocupacion'">
-                <td>{{ item.numeroHabitacion }}</td>
-                <td>{{ item.descripcionCategoria }}</td>
-                <td>{{ item.vecesAlquilada }}</td>
-              </ng-container>
-            </ng-container>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card mt-3 bg-light border-0" *ngIf="!isLoading() && tipoReporte() !== 'ocupacion' && resultados().length > 0">
-    <div class="card-body text-end">
-      <h4 class="mb-0">Total Recaudado: <span class="text-success">{{ totalGeneral() | currency:'PEN':'symbol' }}</span></h4>
+    <!-- Footer con Total General Dinámico -->
+    <div *ngIf="resultados().length > 0 && tipoReporte() !== 'penalidades' && tipoReporte() !== 'stockBajo'" class="card-footer bg-light p-3 d-flex justify-content-between align-items-center rounded-bottom-4">
+      <span class="fw-bold text-secondary">Monto Total Acumulado:</span>
+      <span class="h4 fw-bold text-success m-0 pe-2">S/. {{ totalGeneral() | number:'1.2-2' }}</span>
     </div>
   </div>
 </div>

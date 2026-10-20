@@ -1,55 +1,47 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { timeout, catchError, map } from 'rxjs/operators';
-import { DashboardStatsDto } from '../models/DashboardStatsDto';
-import { ReporteProductoDto, ReporteVentaDto, ReporteHabitacionDto, ReporteCobroDto } from '../models/reporte.models';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import {
+  ApiResponse,
+  ReporteVentaDto,
+  ProductoDto,
+  RecepcionResponseDTO
+} from '../models/reporte.models';
 
-interface ApiResponse<T> { success: boolean; data: T; message?: string; }
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class ReporteService {
-  private readonly API_URL = 'http://localhost:8081/api/reportes';
-  private readonly TIMEOUT_MS = 15000; // Aumentado ligeramente para reportes complejos
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = 'http://localhost:8086/api/reportes';
 
-  constructor(private http: HttpClient) { }
-
-  private request<T>(endpoint: string, params: HttpParams = new HttpParams()): Observable<T> {
-    return this.http.get<ApiResponse<T>>(`${this.API_URL}/${endpoint}`, { params }).pipe(
-      timeout(this.TIMEOUT_MS),
-      map(res => {
-        if (!res.success) throw new Error(res.message || 'Error en la respuesta del servidor');
-        return res.data;
-      }),
-      catchError(err => {
-        console.error('ReporteService Error:', err);
-        return throwError(() => new Error(err.message || 'Error de conexión'));
-      })
-    );
+  // --- INVENTARIO ---
+  getProductosMasVendidos(): Observable<ReporteVentaDto[]> {
+    return this.http.get<ApiResponse<ReporteVentaDto[]>>(`${this.apiUrl}/inventario/productos-mas-vendidos`)
+      .pipe(map(res => res.data || []));
   }
 
-  getProductosBajoStock(limite: number): Observable<ReporteProductoDto[]> {
-    return this.request<ReporteProductoDto[]>('productos-bajo-stock', new HttpParams().set('limite', limite.toString()));
+  // 💡 Nombre unificado a getStockBajo para que coincida con el componente
+  getStockBajo(umbral: number = 5): Observable<ProductoDto[]> {
+    return this.http.get<ApiResponse<ProductoDto[]>>(`${this.apiUrl}/inventario/stock-bajo?umbral=${umbral}`)
+      .pipe(map(res => res.data || []));
   }
 
-  getVentas(inicio: string, fin: string): Observable<ReporteVentaDto[]> {
-    return this.request<ReporteVentaDto[]>('ventas', this.createDateParams(inicio, fin));
+  // --- RECEPCIÓN Y ALQUILERES ---
+  getAlquileres(estado?: boolean): Observable<RecepcionResponseDTO[]> {
+    const url = estado !== undefined ? `${this.apiUrl}/recepcion/alquileres?estado=${estado}` : `${this.apiUrl}/recepcion/alquileres`;
+    return this.http.get<ApiResponse<RecepcionResponseDTO[]>>(url)
+      .pipe(map(res => res.data || []));
   }
 
-  getOcupacion(inicio: string, fin: string): Observable<ReporteHabitacionDto[]> {
-    return this.request<ReporteHabitacionDto[]>('ocupacion', this.createDateParams(inicio, fin));
+  getCuentasPorCobrar(): Observable<RecepcionResponseDTO[]> {
+    return this.http.get<ApiResponse<RecepcionResponseDTO[]>>(`${this.apiUrl}/recepcion/cuentas-por-cobrar`)
+      .pipe(map(res => res.data || []));
   }
 
-  getCobros(inicio: string, fin: string): Observable<ReporteCobroDto[]> {
-    return this.request<ReporteCobroDto[]>('cobros', this.createDateParams(inicio, fin));
-  }
-
-  getDashboardStats(): Observable<DashboardStatsDto> {
-    return this.request<DashboardStatsDto>('dashboard');
-  }
-
-  // Helper para estandarizar parámetros de fecha
-  private createDateParams(inicio: string, fin: string): HttpParams {
-    return new HttpParams().set('inicio', inicio).set('fin', fin);
+  getResumenPenalidades(): Observable<any> {
+    return this.http.get<ApiResponse<any>>(`${this.apiUrl}/recepcion/penalidades`)
+      .pipe(map(res => res.data));
   }
 }

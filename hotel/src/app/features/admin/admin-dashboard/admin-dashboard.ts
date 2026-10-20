@@ -1,25 +1,18 @@
+
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Observable } from 'rxjs';
-import { ReporteService } from '../../../core/services/ReporteService';
-import { DashboardStatsDto } from '../../../core/models/DashboardStatsDto';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './admin-dashboard.html',
-    styleUrls: ['./admin.css']
-
+  styleUrls: ['./admin.css']
 })
 export class AdminDashboard {
 
-  stats$: Observable<DashboardStatsDto>;
-
-  constructor(private router: Router, private reporteService: ReporteService) {
-    this.stats$ = this.reporteService.getDashboardStats();
-  }
+  constructor(private router: Router) {}
 
   cerrarSesion(): void {
     localStorage.clear();

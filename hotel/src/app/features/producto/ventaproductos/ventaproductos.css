@@ -1,0 +1,27 @@
+/* Estilos modernos y limpios para el módulo de consumos */
+.container {
+  max-width: 1200px;
+}
+
+.card {
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.08) !important;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+}
+
+.table th {
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+.badge {
+  font-size: 0.85rem;
+  padding: 0.4em 0.7em;
+}

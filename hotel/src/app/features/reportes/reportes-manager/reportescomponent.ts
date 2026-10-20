@@ -3,8 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable, finalize } from 'rxjs';
 import { ReporteService } from '../../../core/services/ReporteService';
-import { ExportService } from '../../../core/services/ExportService';
-import { ReporteVentaDto, ReporteHabitacionDto, ReporteCobroDto } from '../../../core/models/reporte.models';
+import {
+  ReporteVentaDto,
+  ProductoDto,
+  RecepcionResponseDTO
+} from '../../../core/models/reporte.models';
 
 @Component({
   selector: 'app-reportes',
@@ -15,21 +18,31 @@ import { ReporteVentaDto, ReporteHabitacionDto, ReporteCobroDto } from '../../..
 })
 export class ReportesComponent implements OnInit {
   private readonly service = inject(ReporteService);
-  private readonly exportService = inject(ExportService);
 
-  fechaInicio = signal<string>(new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0, 16));
-  fechaFin = signal<string>(new Date().toISOString().slice(0, 16));
-  tipoReporte = signal<'ventas' | 'ocupacion' | 'cobros'>('ventas');
+  // Selector de tipo de reporte activo
+  tipoReporte = signal<'ventas' | 'stockBajo' | 'alquileres' | 'cuentasPorCobrar' | 'penalidades'>('ventas');
 
   resultados = signal<any[]>([]);
+  resumenPenalidadesData = signal<any>(null);
   isLoading = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
 
+  // Cálculo de totales generales dinámicos según el reporte activo
+// Cálculo de totales generales dinámicos según el reporte activo
+// Cálculo de totales generales dinámicos según el reporte activo
   totalGeneral = computed<number>(() => {
     const data = this.resultados();
     const type = this.tipoReporte();
-    if (type === 'ventas') return (data as ReporteVentaDto[]).reduce((acc, curr) => acc + (curr.totalIngresado || 0), 0);
-    if (type === 'cobros') return (data as ReporteCobroDto[]).reduce((acc, curr) => acc + (curr.totalGeneral || 0), 0);
+
+    if (type === 'ventas') {
+      return (data as any[]).reduce((acc, curr) => acc + (curr.ingresoGenerado || 0), 0);
+    }
+    if (type === 'alquileres') {
+      return (data as any[]).reduce((acc, curr) => acc + (curr.precioInicial || curr.totalPagado || curr.costoTotal || 0), 0);
+    }
+    if (type === 'cuentasPorCobrar') {
+      return (data as any[]).reduce((acc, curr) => acc + (curr.precioRestante || curr.saldo || 0), 0);
+    }
     return 0;
   });
 
@@ -41,42 +54,50 @@ export class ReportesComponent implements OnInit {
     if (this.isLoading()) return;
     this.isLoading.set(true);
     this.errorMessage.set(null);
+    this.resumenPenalidadesData.set(null);
 
-    this.getObservable(this.tipoReporte(), this.fechaInicio(), this.fechaFin())
-      .pipe(finalize(() => this.isLoading.set(false)))
+    const tipo = this.tipoReporte();
+    let obs$: Observable<any>;
+
+    switch (tipo) {
+      case 'ventas':
+        obs$ = this.service.getProductosMasVendidos();
+        break;
+      case 'stockBajo':
+        obs$ = this.service.getStockBajo(5);
+        break;
+      case 'alquileres':
+        obs$ = this.service.getAlquileres();
+        break;
+      case 'cuentasPorCobrar':
+        obs$ = this.service.getCuentasPorCobrar();
+        break;
+      case 'penalidades':
+        obs$ = this.service.getResumenPenalidades();
+        break;
+      default:
+        obs$ = this.service.getProductosMasVendidos();
+    }
+
+    obs$.pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: (data) => this.resultados.set(data || []),
-        error: (err: unknown) => {
-          console.error('Error:', err);
-          this.errorMessage.set('Error al conectar con el servidor.');
+        next: (data) => {
+          if (tipo === 'penalidades') {
+            this.resumenPenalidadesData.set(data);
+            this.resultados.set([]);
+          } else {
+            this.resultados.set(data || []);
+          }
+        },
+        error: (err) => {
+          console.error('Error al generar reporte:', err);
+          this.errorMessage.set('Error al conectar con el servidor de reportes.');
           this.resultados.set([]);
         }
       });
   }
 
-  exportarExcel(): void {
-    if (this.resultados().length === 0) return;
-    this.exportService.exportToExcel(this.resultados(), `Reporte_${this.tipoReporte()}`);
-  }
-
-  exportarPDF(): void {
-    if (this.resultados().length === 0) return;
-    const tipo = this.tipoReporte();
-    const columnas = tipo === 'ventas' ? ['Producto', 'Cantidad', 'Ingreso'] :
-                     tipo === 'cobros' ? ['Habitación', 'Cliente', 'Alojamiento', 'Consumos', 'Total', 'Fecha'] :
-                     ['Habitación', 'Categoría', 'Veces Alquilada'];
-    this.exportService.exportToPDF(this.resultados(), `Reporte_${tipo}`, columnas, `Reporte de ${tipo}`);
-  }
-
-  private getObservable(tipo: string, inicio: string, fin: string): Observable<any[]> {
-    switch (tipo) {
-      case 'ventas': return this.service.getVentas(inicio, fin);
-      case 'cobros': return this.service.getCobros(inicio, fin);
-      default: return this.service.getOcupacion(inicio, fin);
-    }
-  }
-
-  cambiarTipo(tipo: 'ventas' | 'ocupacion' | 'cobros'): void {
+  cambiarTipo(tipo: 'ventas' | 'stockBajo' | 'alquileres' | 'cuentasPorCobrar' | 'penalidades'): void {
     this.tipoReporte.set(tipo);
     this.generarReporte();
   }
