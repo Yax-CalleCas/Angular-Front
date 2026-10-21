@@ -8,7 +8,6 @@ import { ApiResponse } from '../models/ApiResponse';
 export class RecepcionService {
   private readonly http = inject(HttpClient);
 
-  // Proxy de Angular -> gateway (8089) -> recepcion (8084)
 
   private readonly baseUrl = '/gateway/recepcion-service/api/recepcion';
 

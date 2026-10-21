@@ -35,15 +35,21 @@
                   <div class="row g-3">
                     <div class="col-md-4">
                       <span class="text-muted d-block small">NOMBRES Y APELLIDOS</span>
-                      <strong class="text-dark">{{ h.nombreCliente || 'Cliente N/A' }} {{ h.apellidoCliente || '' }}</strong>
+                      <strong class="text-dark">
+                        {{ cliente() ? (cliente()?.nombre + ' ' + cliente()?.apellido) : (h.nombreCliente || 'Cliente N/A') }}
+                      </strong>
                     </div>
                     <div class="col-md-4">
                       <span class="text-muted d-block small">DOCUMENTO (DNI / C.E.)</span>
-                      <strong class="text-dark">{{ h.documentoCliente || 'No especificado' }}</strong>
+                      <strong class="text-dark">
+                        {{ cliente()?.documento || h.documentoCliente || 'Sin documento' }}
+                      </strong>
                     </div>
                     <div class="col-md-4">
                       <span class="text-muted d-block small">CORREO ELECTRÓNICO</span>
-                      <strong class="text-dark">Registrado en sistema</strong>
+                      <strong class="text-dark">
+                        {{ cliente()?.correo || h.correoCliente || 'No registrado' }}
+                      </strong>
                     </div>
 
                     <div class="col-md-3 mt-3">

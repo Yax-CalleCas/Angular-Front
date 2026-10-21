@@ -18,14 +18,15 @@
       <div class="col-sm-6">
         <div class="info-box">
           <h6 class="section-title">Datos del Cliente</h6>
-          <p><strong>Cliente:</strong> {{ d.nombre }} {{ d.apellido }}</p>
-          <p><strong>Documento:</strong> {{ d.documento }}</p>
+          <p><strong>Cliente:</strong> {{ cliente() ? (cliente()?.nombre + ' ' + cliente()?.apellido) : (d.nombreCliente || 'Cliente N/A') }}</p>
+          <p><strong>Documento:</strong> {{ cliente()?.documento || d.documentoCliente || 'Sin documento' }}</p>
+          <p><strong>Correo:</strong> {{ cliente()?.correo || d.correoCliente || 'No registrado' }}</p>
         </div>
       </div>
       <div class="col-sm-6 text-sm-end">
         <div class="info-box">
           <h6 class="section-title">Detalles de Estancia</h6>
-          <p><strong>Habitación:</strong> {{ d.numero }}</p>
+          <p><strong>Habitación:</strong> {{ d.numeroHabitacion }}</p>
           <p><strong>Entrada:</strong> {{ d.fechaEntrada | date:'dd/MM/yyyy' }}</p>
           <p><strong>Salida:</strong> {{ fechaSalidaCalculada | date:'dd/MM/yyyy' }}</p>
         </div>

@@ -6,9 +6,11 @@ import Swal from 'sweetalert2';
 
 import { RecepcionService } from '../../../core/services/recepcion.service';
 import { VentaService } from '../../../core/services/venta.service';
+import { PersonaService } from '../../../core/services/persona.service';
 import { Venta } from '../../../core/models/Venta';
 import { DetalleVenta } from '../../../core/models/detalleventa';
 import { SalidaRequest, RecepcionResponseDTO } from '../../../core/models/recepcion.model';
+import { Persona } from '../../../core/models/persona.model';
 
 export interface ItemServicio {
   producto: string;
@@ -29,11 +31,20 @@ export class Procesarsalida implements OnInit {
   private readonly router = inject(Router);
   private readonly recService = inject(RecepcionService);
   private readonly ventaService = inject(VentaService);
+  private readonly personaService = inject(PersonaService); // Inyectamos PersonaService como en RecepcionDetalle
 
   isLoading = signal(false);
   datosHospedaje = signal<RecepcionResponseDTO | null>(null);
+  listaPersonas = signal<Persona[]>([]); // Almacena el listado de personas/clientes
   servicios = signal<ItemServicio[]>([]);
   costoPenalidad = signal<number>(0);
+
+  // Computado para obtener los datos exactos del cliente vinculado a la recepción
+  cliente = computed(() => {
+    const h = this.datosHospedaje();
+    if (!h || !h.idCliente) return null;
+    return this.listaPersonas().find(p => p.idPersona === h.idCliente) || null;
+  });
 
   totalConsumosPendientes = computed(() =>
     this.servicios().reduce((sum, s) =>
@@ -47,6 +58,7 @@ export class Procesarsalida implements OnInit {
   });
 
   ngOnInit(): void {
+    this.cargarClientes(); // Cargamos el catálogo de clientes al iniciar[cite: 11]
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (id) {
       this.cargarDatos(id);
@@ -56,6 +68,18 @@ export class Procesarsalida implements OnInit {
     }
   }
 
+  private cargarClientes(): void {
+    this.personaService.listar().subscribe({
+      next: (personas: any) => {
+        const lista = personas?.data ?? personas ?? [];
+        this.listaPersonas.set(lista);
+      },
+      error: err => {
+        console.error('Error al cargar la lista de personas:', err);
+      }
+    });
+  }
+
   cargarDatos(idHabitacion: number): void {
     this.isLoading.set(true);
     this.recService.buscarActivaPorHabitacion(idHabitacion).subscribe({
@@ -63,7 +87,6 @@ export class Procesarsalida implements OnInit {
         const data = res?.data ?? res;
         if (data) {
           this.datosHospedaje.set(data);
-          // Si el DTO ya trae la penalidad inicial grabada, la asignamos
           if (data.costoPenalidad) {
             this.costoPenalidad.set(Number(data.costoPenalidad));
           }
