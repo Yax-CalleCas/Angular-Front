@@ -11,8 +11,8 @@ import { Venta } from '../models/Venta';
 export class VentaService {
 
   private readonly http = inject(HttpClient);
-  // Ajusta el puerto o la URL base según tu entorno (Gateway o microservicio de inventario directo)
-  private readonly baseUrl = 'http://localhost:8000/api/venta';
+
+  private readonly baseUrl = '/gateway/inventario-productos/api/venta';
 
   // Listar todas las ventas
   listar(): Observable<ApiResponse<Venta[]>> {

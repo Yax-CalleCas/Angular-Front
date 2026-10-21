@@ -18,6 +18,7 @@
         <p>Introduce tus credenciales para acceder al panel administrativo</p>
       </header>
 
+      <!-- Alerta de Error (Backend / Bloqueo por intentos / HTTP 423) -->
       @if (errorMessage) {
         <div class="alert-danger" role="alert">
           <span class="error-dot"></span>
@@ -26,6 +27,7 @@
       }
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        <!-- Campo Correo -->
         <div class="form-group">
           <label for="correo">correo electrónico</label>
           <input
@@ -43,6 +45,7 @@
           }
         </div>
 
+        <!-- Campo Contraseña -->
         <div class="form-group">
           <label for="clave">contraseña</label>
           <input
@@ -58,8 +61,13 @@
           }
         </div>
 
-        <button type="submit" [disabled]="loginForm.invalid" class="btn-primary">
-          ingresar al sistema
+        <!-- Botón de Envío con Estado de Carga -->
+        <button type="submit" [disabled]="loginForm.invalid || isLoading" class="btn-primary">
+          @if (isLoading) {
+            <span class="spinner-text">verificando accesos...</span>
+          } @else {
+            <span>ingresar al sistema</span>
+          }
         </button>
       </form>
 

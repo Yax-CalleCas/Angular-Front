@@ -13,8 +13,10 @@ export class AuthService {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
 
-  private readonly API_AUTH_URL = 'http://localhost:8081/api/auth';
-  private readonly API_PERSONA_URL = 'http://localhost:8081/api/persona';
+  // Rutas relativas: el proxy de Angular las reenvía al gateway (8089),
+  // y el gateway las dirige a auth-service (8081)
+  private readonly API_AUTH_URL = '/gateway/auth-service/api/auth';
+  private readonly API_PERSONA_URL = '/gateway/auth-service/api/persona';
 
   private readonly TOKEN_KEY = 'token';
   private readonly ROLE_KEY = 'user_role';
@@ -46,30 +48,20 @@ export class AuthService {
     }
   }
 
-  // ALINEADO AL BACKEND: Apunta correctamente a /api/persona/registro-publico
   registrarCliente(dto: RegistroClienteDto): Observable<Persona> {
     return this.http.post<Persona>(`${this.API_PERSONA_URL}/registro-publico`, dto);
   }
 
   getUserId(): string | null {
-    if (isPlatformBrowser(this.platformId)) {
-      return localStorage.getItem(this.ID_KEY);
-    }
-    return null;
+    return isPlatformBrowser(this.platformId) ? localStorage.getItem(this.ID_KEY) : null;
   }
 
   getToken(): string | null {
-    if (isPlatformBrowser(this.platformId)) {
-      return localStorage.getItem(this.TOKEN_KEY);
-    }
-    return null;
+    return isPlatformBrowser(this.platformId) ? localStorage.getItem(this.TOKEN_KEY) : null;
   }
 
   getUserRole(): string | null {
-    if (isPlatformBrowser(this.platformId)) {
-      return localStorage.getItem(this.ROLE_KEY);
-    }
-    return null;
+    return isPlatformBrowser(this.platformId) ? localStorage.getItem(this.ROLE_KEY) : null;
   }
 
   getSedes(): Sede[] {

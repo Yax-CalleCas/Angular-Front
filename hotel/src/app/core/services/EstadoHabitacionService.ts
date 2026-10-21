@@ -8,7 +8,9 @@ import { EstadoHabitacionResponseDTO } from '../models/estado-habitacion.model';
 @Injectable({ providedIn: 'root' })
 export class EstadoHabitacionService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8085/api/estadohabitacion';
+
+  // Corregido para apuntar a /api/estadohabitacion
+  private readonly baseUrl = '/gateway/habitaciones/api/estadohabitacion';
   private listarCache$?: Observable<ApiResponse<EstadoHabitacionResponseDTO[]>>;
 
   listar(): Observable<ApiResponse<EstadoHabitacionResponseDTO[]>> {

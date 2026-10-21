@@ -8,3 +8,4 @@ export interface Producto {
   fechaCreacion?: string;
   imagenUrl?: string;
 }
+

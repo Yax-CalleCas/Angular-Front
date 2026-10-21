@@ -21,7 +21,8 @@ interface ItemCarrito {
   selector: 'app-ventaproductos',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './ventaproductos.html'
+  templateUrl: './ventaproductos.html',
+  styleUrls: ['./ventaproductos.css']
 })
 export class Ventaproductos implements OnInit {
   private route = inject(ActivatedRoute);

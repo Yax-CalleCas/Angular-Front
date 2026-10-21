@@ -1,5 +1,5 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, ChangeDetectorRef, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProductoService } from '../../core/services/producto.service';
@@ -15,10 +15,11 @@ import Swal from 'sweetalert2';
   styleUrls: ['./productos.css']
 })
 export class ProductoComponent implements OnInit {
-  private fb = inject(FormBuilder);
-  private prodService = inject(ProductoService);
-  private router = inject(Router);
-  private cdr = inject(ChangeDetectorRef);
+  private readonly fb = inject(FormBuilder);
+  private readonly prodService = inject(ProductoService);
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly platformId = inject(PLATFORM_ID);
 
   productos: Producto[] = [];
   form: FormGroup;
@@ -46,8 +47,13 @@ export class ProductoComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.cargar();
+    // En SSR no hay token ni Swal: solo se carga en el navegador
+    if (isPlatformBrowser(this.platformId)) {
+      this.cargar();
+    }
   }
+
+  // ───────────── Getters de paginación ─────────────
 
   get mostrarFormulario(): boolean {
     return this.isEdit || this.form.dirty;
@@ -72,6 +78,8 @@ export class ProductoComponent implements OnInit {
     }
   }
 
+  // ───────────── GET /listar ─────────────
+
   cargar(): void {
     this.isLoading = true;
     this.cdr.detectChanges();
@@ -91,6 +99,8 @@ export class ProductoComponent implements OnInit {
         error: (err) => this.manejarError(err)
       });
   }
+
+  // ───────────── Imagen ─────────────
 
   async onArchivoSeleccionado(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
@@ -134,10 +144,10 @@ export class ProductoComponent implements OnInit {
     }
   }
 
-  private async comprimirImagen(file: File): Promise<string> {
+  private comprimirImagen(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e: any) => {
+      reader.onload = (e: ProgressEvent<FileReader>) => {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
@@ -149,11 +159,9 @@ export class ProductoComponent implements OnInit {
               height = Math.round((height * this.maxLadoPx) / width);
               width = this.maxLadoPx;
             }
-          } else {
-            if (height > this.maxLadoPx) {
-              width = Math.round((width * this.maxLadoPx) / height);
-              height = this.maxLadoPx;
-            }
+          } else if (height > this.maxLadoPx) {
+            width = Math.round((width * this.maxLadoPx) / height);
+            height = this.maxLadoPx;
           }
 
           canvas.width = width;
@@ -168,7 +176,7 @@ export class ProductoComponent implements OnInit {
           resolve(canvas.toDataURL('image/jpeg', this.calidadJpeg));
         };
         img.onerror = (error) => reject(error);
-        img.src = e.target.result;
+        img.src = e.target?.result as string;
       };
       reader.onerror = (error) => reject(error);
       reader.readAsDataURL(file);
@@ -180,24 +188,43 @@ export class ProductoComponent implements OnInit {
     this.form.markAsDirty();
   }
 
+  // ───────────── Formulario ─────────────
+
   nuevo(): void {
     this.isEdit = false;
     this.form.reset({ precio: 0, cantidad: 0, estado: true, imagenUrl: '' });
     this.form.markAsDirty();
   }
 
+  editar(p: Producto): void {
+    this.isEdit = true;
+    this.form.patchValue(p);
+    this.form.markAsPristine();
+  }
+
+  cancelar(): void {
+    this.isEdit = false;
+    this.form.reset({ precio: 0, cantidad: 0, estado: true, imagenUrl: '' });
+  }
+
+  // ───────────── POST /registrar  |  PUT /actualizar/{id} ─────────────
+
   guardar(): void {
-    if (this.form.invalid || this.isSaving) return;
+    if (this.isSaving) return;
+
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      Swal.fire('Datos incompletos', 'Revise los campos obligatorios del formulario.', 'warning');
+      return;
+    }
 
     const formValue = this.form.value;
-
-    // Asegurar que si está vacío, viaje como null
-    const producto = {
+    const producto: Producto = {
       ...formValue,
       imagenUrl: formValue.imagenUrl && formValue.imagenUrl.trim() !== '' ? formValue.imagenUrl : null
     };
 
-    const obs = this.isEdit
+    const obs = this.isEdit && producto.idProducto != null
       ? this.prodService.actualizar(producto.idProducto, producto)
       : this.prodService.registrar(producto);
 
@@ -216,14 +243,46 @@ export class ProductoComponent implements OnInit {
     });
   }
 
-  editar(p: Producto): void {
-    this.isEdit = true;
-    this.form.patchValue(p);
-    this.form.markAsPristine(); // Evita que se marque sucio automáticamente al abrir
+  // ───────────── PATCH /{id}/stock/aumentar ─────────────
+
+  async aumentarStock(id: number | undefined): Promise<void> {
+    if (id == null) {
+      Swal.fire('Error', 'ID de producto inválido.', 'error');
+      return;
+    }
+
+    const { value: cantidadStr } = await Swal.fire({
+      title: 'Aumentar Stock',
+      text: 'Ingrese la cantidad a incrementar:',
+      input: 'number',
+      inputAttributes: { min: '1', step: '1' },
+      showCancelButton: true,
+      confirmButtonText: 'Aumentar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (!value || Number(value) <= 0 || !Number.isInteger(Number(value))) {
+          return 'Debe ingresar un número entero mayor a 0';
+        }
+        return null;
+      }
+    });
+
+    if (!cantidadStr) return;
+    const cantidad = Number(cantidadStr);
+
+    this.prodService.aumentarStock(id, cantidad).subscribe({
+      next: (res) => {
+        Swal.fire('Stock Actualizado', res.message || 'Stock incrementado correctamente', 'success');
+        this.cargar();
+      },
+      error: (err) => this.manejarError(err)
+    });
   }
 
+  // ───────────── DELETE /eliminar/{id} ─────────────
+
   eliminar(id: number | undefined): void {
-    if (id === undefined || id === null) {
+    if (id == null) {
       Swal.fire('Error', 'No se puede eliminar un registro sin ID válido.', 'error');
       return;
     }
@@ -250,10 +309,7 @@ export class ProductoComponent implements OnInit {
     });
   }
 
-  cancelar(): void {
-    this.isEdit = false;
-    this.form.reset({ precio: 0, cantidad: 0, estado: true, imagenUrl: '' });
-  }
+  // ───────────── Utilidades ─────────────
 
   private finGuardado(): void {
     this.isSaving = false;
@@ -263,11 +319,13 @@ export class ProductoComponent implements OnInit {
   private manejarError(err: any): void {
     console.error('Error en ProductoComponent:', err);
 
-    if (err?.status === 403 || err?.status === 401) {
-      Swal.fire('Sesión Caducada', 'No tienes permisos o tu sesión expiró.', 'error')
+    if (err?.status === 401) {
+      Swal.fire('Sesión caducada', 'Inicia sesión nuevamente para continuar.', 'error')
         .then(() => this.router.navigate(['/login']));
+    } else if (err?.status === 403) {
+      Swal.fire('Sin permisos', 'No tienes permisos para realizar esta acción.', 'error');
     } else {
-      const mensaje = err?.error?.message || err?.error?.error || 'Ocurrió un error inesperado al procesar la solicitud.';
+      const mensaje = err?.message || err?.error?.message || 'Ocurrió un error inesperado al procesar la solicitud.';
       Swal.fire('Error', mensaje, 'error');
     }
   }

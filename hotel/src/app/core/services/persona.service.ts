@@ -6,7 +6,9 @@ import { Persona } from '../models/persona.model';
 @Injectable({ providedIn: 'root' })
 export class PersonaService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8081/api/persona';
+
+  // Proxy de Angular -> gateway (8089) -> auth-service (8081)
+  private readonly baseUrl = '/gateway/auth-service/api/persona';
   private listarCache$?: Observable<Persona[]>;
 
   listar(): Observable<Persona[]> {
@@ -40,7 +42,8 @@ export class PersonaService {
     );
   }
 
-  private limpiarCache(): void {
+  /** Útil para llamarlo al cerrar sesión. */
+  limpiarCache(): void {
     this.listarCache$ = undefined;
   }
 }

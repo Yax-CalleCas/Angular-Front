@@ -1,34 +1,39 @@
 // src/app/core/interceptors/auth.interceptor.ts
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { AuthService } from '../services/auth.service';
-import { catchError, throwError } from 'rxjs';
 import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
+import { AuthService } from '../services/auth.service';
+
+const RUTAS_PUBLICAS = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/registro-cliente',
+  '/api/persona/registro-publico'
+];
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const token = authService.getToken();
 
-  // 🛡️ Excluimos todos los endpoints públicos de autenticación (login y registros)
-  const isAuthEndpoint =
-      req.url.includes('/api/auth/login') ||
-      req.url.includes('/api/auth/register') ||
-      req.url.includes('/api/auth/registro-cliente');
+  const esPublico = RUTAS_PUBLICAS.some(ruta => req.url.includes(ruta));
 
   let authReq = req;
 
-  // Inyección del token Bearer omitiendo endpoints públicos de auth
-  if (token && !isAuthEndpoint) {
+  // Token Bearer solo en endpoints protegidos
+  if (token && !esPublico) {
     authReq = authReq.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
+      setHeaders: { Authorization: `Bearer ${token}` }
     });
   }
 
-  // Omitimos también la idempotencia en las peticiones de login/registro
-  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && !authReq.headers.has('Idempotency-Key') && !isAuthEndpoint) {
+  // Idempotency-Key y Accept-Language en escrituras protegidas
+  if (
+    !esPublico &&
+    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) &&
+    !authReq.headers.has('Idempotency-Key')
+  ) {
     authReq = authReq.clone({
       setHeaders: {
         'Idempotency-Key': crypto.randomUUID(),
@@ -39,7 +44,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401) {
+      // Solo cerramos sesión si el 401 viene de un endpoint protegido
+      if (error.status === 401 && !esPublico) {
         authService.logout();
         router.navigate(['/login']);
       }

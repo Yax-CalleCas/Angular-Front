@@ -8,16 +8,14 @@ import { ApiResponse } from '../models/ApiResponse';
   providedIn: 'root'
 })
 export class CarritoService {
-
-  private readonly url = 'http://localhost:8000/api/carrito';
+  private readonly url = '/gateway/inventario-productos/api/carrito';
   private readonly http = inject(HttpClient);
 
   private carritoSubject = new BehaviorSubject<Carrito[]>([]);
   carrito$ = this.carritoSubject.asObservable();
 
-  // =========================
+
   // AGREGAR AL CARRITO
-  // =========================
   agregarAlCarrito(idRecepcion: number, idProducto: number, cantidad: number): Observable<ApiResponse<Boolean>> {
     const params = new HttpParams()
       .set('idRecepcion', idRecepcion.toString())
@@ -33,15 +31,13 @@ export class CarritoService {
     );
   }
 
-  // =========================
+
   // CARGAR CARRITO
-  // =========================
   actualizarCarrito(idRecepcion: number): void {
     this.http.get<ApiResponse<Carrito[]>>(
       `${this.url}/listar/${idRecepcion}`
     ).subscribe({
       next: (response) => {
-        // Extraemos la lista del atributo 'data' de la ApiResponse
         this.carritoSubject.next(response.data ?? []);
       },
       error: (err) => {
@@ -51,9 +47,6 @@ export class CarritoService {
     });
   }
 
-  // =========================
-  // ELIMINAR PRODUCTO
-  // =========================
   eliminarProducto(idRecepcion: number, idProducto: number): Observable<ApiResponse<void>> {
     const params = new HttpParams()
       .set('idRecepcion', idRecepcion.toString())

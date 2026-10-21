@@ -9,19 +9,33 @@
     </header>
 
     <div class="card-body p-4 text-xs">
-      <form [formGroup]="form" (ngSubmit)="guardar()">
+      <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
         <div class="row g-3">
           <div class="col-md-6">
             <label for="prodNombre" class="form-label fw-semibold text-tinta">Nombre del Producto <span class="text-cochinilla">*</span></label>
-            <input id="prodNombre" formControlName="nombre" aria-required="true" class="form-control text-xs border-junta shadow-none" placeholder="Ej. Zapatillas Running">
+            <input id="prodNombre" formControlName="nombre" aria-required="true"
+                   class="form-control text-xs border-junta shadow-none"
+                   [class.is-invalid]="form.get('nombre')?.invalid && form.get('nombre')?.touched"
+                   placeholder="Ej. Zapatillas Running">
+            <div class="invalid-feedback">El nombre es obligatorio.</div>
           </div>
+
           <div class="col-md-3">
             <label for="prodPrecio" class="form-label fw-semibold text-tinta">Precio (S/) <span class="text-cochinilla">*</span></label>
-            <input id="prodPrecio" type="number" min="0" step="0.01" formControlName="precio" aria-required="true" class="form-control text-xs border-junta shadow-none" placeholder="0.00">
+            <input id="prodPrecio" type="number" min="0" step="0.01" formControlName="precio" aria-required="true"
+                   class="form-control text-xs border-junta shadow-none"
+                   [class.is-invalid]="form.get('precio')?.invalid && form.get('precio')?.touched"
+                   placeholder="0.00">
+            <div class="invalid-feedback">Ingresa un precio igual o mayor a 0.</div>
           </div>
+
           <div class="col-md-3">
             <label for="prodStock" class="form-label fw-semibold text-tinta">Stock Disponible <span class="text-cochinilla">*</span></label>
-            <input id="prodStock" type="number" min="0" formControlName="cantidad" aria-required="true" class="form-control text-xs border-junta shadow-none" placeholder="0">
+            <input id="prodStock" type="number" min="0" formControlName="cantidad" aria-required="true"
+                   class="form-control text-xs border-junta shadow-none"
+                   [class.is-invalid]="form.get('cantidad')?.invalid && form.get('cantidad')?.touched"
+                   placeholder="0">
+            <div class="invalid-feedback">Ingresa un stock igual o mayor a 0.</div>
           </div>
         </div>
 
@@ -29,6 +43,11 @@
           <div class="col-md-6">
             <label for="prodDetalle" class="form-label fw-semibold text-tinta">Detalle</label>
             <input id="prodDetalle" formControlName="detalle" class="form-control text-xs border-junta shadow-none" placeholder="Descripción breve">
+
+            <div class="form-check form-switch mt-3">
+              <input id="prodEstado" type="checkbox" formControlName="estado" class="form-check-input" role="switch">
+              <label for="prodEstado" class="form-check-label fw-semibold text-tinta">Producto activo</label>
+            </div>
           </div>
 
           <!-- ── Carga de Imagen Local ── -->
@@ -56,7 +75,7 @@
           <button type="button" class="btn btn-secondary-sillar text-xs px-3 py-2" (click)="cancelar()" [disabled]="isSaving">
             Cancelar
           </button>
-          <button type="submit" class="btn btn-primary-sillar text-xs px-4 py-2" [disabled]="form.invalid || isSaving">
+          <button type="submit" class="btn btn-primary-sillar text-xs px-4 py-2" [disabled]="isSaving || procesandoImagen">
             <span *ngIf="isSaving; else iconoGuardar" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
             <ng-template #iconoGuardar><i class="bi bi-save me-1" aria-hidden="true"></i></ng-template>
             {{ isEdit ? 'Actualizar' : 'Guardar' }}
@@ -92,9 +111,11 @@
           <tr>
             <th scope="col" class="py-3 px-3" style="width: 70px;">Imagen</th>
             <th scope="col" class="py-3 px-3">Nombre</th>
+            <th scope="col" class="py-3 px-3">Detalle</th>
             <th scope="col" class="py-3 px-3">Precio</th>
             <th scope="col" class="py-3 px-3">Stock</th>
-            <th scope="col" class="py-3 px-3 text-end" style="width: 140px;">Acciones</th>
+            <th scope="col" class="py-3 px-3">Estado</th>
+            <th scope="col" class="py-3 px-3 text-end" style="width: 190px;">Acciones</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-junta">
@@ -108,14 +129,23 @@
               </ng-template>
             </td>
             <td class="px-3 py-3 fw-semibold text-tinta">{{ p.nombre }}</td>
-            <td class="px-3 py-3 font-mono fw-semibold text-success tabular-nums">{{ p.precio | currency:'S/ ' }}</td>
+            <td class="px-3 py-3 text-garua">{{ p.detalle || '—' }}</td>
+            <td class="px-3 py-3 font-mono fw-semibold text-success tabular-nums">{{ p.precio | currency:'PEN':'S/ ':'1.2-2' }}</td>
             <td class="px-3 py-3">
               <span class="badge rounded-pill fw-medium py-1" [ngClass]="(p.cantidad ?? 0) > 0 ? 'bg-success-subtle text-success-emphasis' : 'bg-danger-subtle text-danger-emphasis'">
                 {{ p.cantidad }} uds
               </span>
             </td>
-            <td class="px-3 py-3 text-end">
-              <button type="button" class="btn btn-sm btn-secondary-sillar text-xs py-1 px-2 me-2" (click)="editar(p)" title="Editar" [attr.aria-label]="'Editar ' + p.nombre">
+            <td class="px-3 py-3">
+              <span class="badge rounded-pill fw-medium py-1" [ngClass]="p.estado ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'">
+                {{ p.estado ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="px-3 py-3 text-end text-nowrap">
+              <button type="button" class="btn btn-sm btn-outline-success text-xs py-1 px-2 me-1" (click)="aumentarStock(p.idProducto)" title="Aumentar stock" [attr.aria-label]="'Aumentar stock de ' + p.nombre">
+                <i class="bi bi-plus-circle" aria-hidden="true"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-secondary-sillar text-xs py-1 px-2 me-1" (click)="editar(p)" title="Editar" [attr.aria-label]="'Editar ' + p.nombre">
                 <i class="bi bi-pencil text-primary" aria-hidden="true"></i> Editar
               </button>
               <button type="button" class="btn btn-sm btn-outline-danger text-xs py-1 px-2" (click)="eliminar(p.idProducto)" title="Eliminar" [attr.aria-label]="'Eliminar ' + p.nombre">

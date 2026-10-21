@@ -7,15 +7,16 @@ import { HabitacionResponseDTO, HabitacionRequestDTO } from '../models/Habitacio
 @Injectable({ providedIn: 'root' })
 export class HabitacionService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8085/api/habitacion';
+
+  private readonly baseUrl = '/gateway/habitaciones/api/habitacion';
 
   private listarCache$?: Observable<ApiResponse<HabitacionResponseDTO[]>>;
 
   listar(): Observable<ApiResponse<HabitacionResponseDTO[]>> {
     if (!this.listarCache$) {
-      this.listarCache$ = this.http.get<ApiResponse<HabitacionResponseDTO[]>>(`${this.baseUrl}/listar`).pipe(
-        shareReplay(1)
-      );
+      this.listarCache$ = this.http
+        .get<ApiResponse<HabitacionResponseDTO[]>>(`${this.baseUrl}/listar`)
+        .pipe(shareReplay(1));
     }
     return this.listarCache$;
   }
@@ -24,7 +25,7 @@ export class HabitacionService {
     return this.http.get<ApiResponse<HabitacionResponseDTO[]>>(`${this.baseUrl}/listar/hotel/${idHotel}`);
   }
 
-  private invalidateCache(): void {
+  invalidateCache(): void {
     this.listarCache$ = undefined;
   }
 
@@ -33,26 +34,26 @@ export class HabitacionService {
   }
 
   guardar(dto: HabitacionRequestDTO): Observable<ApiResponse<HabitacionResponseDTO>> {
-    return this.http.post<ApiResponse<HabitacionResponseDTO>>(`${this.baseUrl}/registrar`, dto).pipe(
-      tap(() => this.invalidateCache())
-    );
+    return this.http
+      .post<ApiResponse<HabitacionResponseDTO>>(`${this.baseUrl}/registrar`, dto)
+      .pipe(tap(() => this.invalidateCache()));
   }
 
   actualizar(id: number, dto: HabitacionRequestDTO): Observable<ApiResponse<HabitacionResponseDTO>> {
-    return this.http.put<ApiResponse<HabitacionResponseDTO>>(`${this.baseUrl}/actualizar/${id}`, dto).pipe(
-      tap(() => this.invalidateCache())
-    );
+    return this.http
+      .put<ApiResponse<HabitacionResponseDTO>>(`${this.baseUrl}/actualizar/${id}`, dto)
+      .pipe(tap(() => this.invalidateCache()));
   }
 
   actualizarEstado(idHabitacion: number, idEstado: number): Observable<ApiResponse<HabitacionResponseDTO>> {
-    return this.http.patch<ApiResponse<HabitacionResponseDTO>>(`${this.baseUrl}/${idHabitacion}/estado/${idEstado}`, {}).pipe(
-      tap(() => this.invalidateCache())
-    );
+    return this.http
+      .patch<ApiResponse<HabitacionResponseDTO>>(`${this.baseUrl}/${idHabitacion}/estado/${idEstado}`, {})
+      .pipe(tap(() => this.invalidateCache()));
   }
 
   eliminar(id: number): Observable<ApiResponse<null>> {
-    return this.http.delete<ApiResponse<null>>(`${this.baseUrl}/eliminar/${id}`).pipe(
-      tap(() => this.invalidateCache())
-    );
+    return this.http
+      .delete<ApiResponse<null>>(`${this.baseUrl}/eliminar/${id}`)
+      .pipe(tap(() => this.invalidateCache()));
   }
 }

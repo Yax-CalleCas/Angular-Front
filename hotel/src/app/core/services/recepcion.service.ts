@@ -7,7 +7,10 @@ import { ApiResponse } from '../models/ApiResponse';
 @Injectable({ providedIn: 'root' })
 export class RecepcionService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8084/api/recepcion'; // Idealmente mover a environment.ts
+
+  // Proxy de Angular -> gateway (8089) -> recepcion (8084)
+
+  private readonly baseUrl = '/gateway/recepcion-service/api/recepcion';
 
   /**
    * Lista todas las recepciones o filtra opcionalmente por estado.
@@ -21,51 +24,37 @@ export class RecepcionService {
     return this.http.get<ApiResponse<RecepcionResponseDTO[]>>(`${this.baseUrl}/listar`, { params });
   }
 
-  /**
-   * Obtiene el historial de recepciones asociadas a un cliente específico.
-   */
+  /** Historial de recepciones de un cliente. */
   listarPorCliente(idCliente: number): Observable<ApiResponse<RecepcionResponseDTO[]>> {
     return this.http.get<ApiResponse<RecepcionResponseDTO[]>>(`${this.baseUrl}/cliente/${idCliente}`);
   }
 
-  /**
-   * Registra una nueva entrada (Check-in).
-   */
+  /** Registra una nueva entrada (Check-in). */
   registrar(dto: RecepcionRequestDTO): Observable<ApiResponse<RecepcionResponseDTO>> {
     return this.http.post<ApiResponse<RecepcionResponseDTO>>(`${this.baseUrl}/registrar`, dto);
   }
 
-  /**
-   * Procesa la salida (Check-out) y registra penalidades si aplica.
-   */
+  /** Procesa la salida (Check-out) y registra penalidades si aplica. */
   registrarSalida(data: SalidaRequest): Observable<ApiResponse<RecepcionResponseDTO>> {
     return this.http.post<ApiResponse<RecepcionResponseDTO>>(`${this.baseUrl}/registrar-salida`, data);
   }
 
-  /**
-   * Busca los datos de una recepción específica por su ID.
-   */
+  /** Busca una recepción por su ID. */
   buscarPorId(id: number): Observable<ApiResponse<RecepcionResponseDTO>> {
     return this.http.get<ApiResponse<RecepcionResponseDTO>>(`${this.baseUrl}/${id}`);
   }
 
-  /**
-   * Busca si una habitación cuenta con una recepción activa en curso.
-   */
+  /** Busca la recepción activa de una habitación. */
   buscarActivaPorHabitacion(idHabitacion: number): Observable<ApiResponse<RecepcionResponseDTO>> {
     return this.http.get<ApiResponse<RecepcionResponseDTO>>(`${this.baseUrl}/habitacion-activa/${idHabitacion}`);
   }
 
-  /**
-   * Actualiza los datos de una recepción existente.
-   */
+  /** Actualiza una recepción existente. */
   actualizar(id: number, dto: Partial<RecepcionRequestDTO>): Observable<ApiResponse<RecepcionResponseDTO>> {
     return this.http.put<ApiResponse<RecepcionResponseDTO>>(`${this.baseUrl}/actualizar/${id}`, dto);
   }
 
-  /**
-   * Elimina un registro de recepción por su ID.
-   */
+  /** Elimina un registro de recepción. */
   eliminar(id: number): Observable<ApiResponse<void>> {
     return this.http.delete<ApiResponse<void>>(`${this.baseUrl}/eliminar/${id}`);
   }
