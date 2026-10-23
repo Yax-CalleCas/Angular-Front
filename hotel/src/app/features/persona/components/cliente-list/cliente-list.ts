@@ -28,8 +28,9 @@ export class ClienteListComponent implements OnInit {
 
   cargarPersonas(): void {
     this.service.listar().subscribe({
-      next: (personas: Persona[]) => {
-        this.personas = personas?.filter((p: Persona) => p.idTipoPersona === 3) || [];
+      next: (res: any) => {
+        const lista = res?.data ?? res ?? [];
+        this.personas = lista.filter((p: Persona) => Number(p.idTipoPersona) === 3);
         if (this.currentPage > this.totalPages && this.totalPages > 0) {
           this.currentPage = this.totalPages;
         }
@@ -49,9 +50,14 @@ export class ClienteListComponent implements OnInit {
 
     const payload: Persona = {
       ...this.personaSeleccionada,
+      idTipoPersona: 3, // Forzamos siempre que sea tipo cliente
       clave: this.personaSeleccionada.clave || (esEdicion ? '**********' : ''),
       fotoUrl: this.personaSeleccionada.fotoUrl || '',
-      sedes: this.personaSeleccionada.sedes || []
+      sedes: (this.personaSeleccionada.sedes || []).map((s: any) => ({
+        idSede: s.idSede,
+        codigo: s.codigo,
+        nombre: s.nombre
+      }))
     };
 
     const obs = esEdicion
@@ -80,7 +86,8 @@ export class ClienteListComponent implements OnInit {
       text: "Esta acción eliminará permanentemente al cliente.",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar'
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
     }).then(res => {
       if (res.isConfirmed) {
         this.service.eliminar(id).subscribe({
@@ -95,13 +102,32 @@ export class ClienteListComponent implements OnInit {
   }
 
   editarCliente(p: Persona): void {
-    this.personaSeleccionada = { ...p };
+    this.personaSeleccionada = { ...p, clave: '' };
     this.toggleModal('show');
   }
 
   nuevoCliente(): void {
     this.personaSeleccionada = this.crearPersonaVacia();
     this.toggleModal('show');
+  }
+
+  // --- Método para restringir el número de documento dinámicamente ---
+  onDocumentoInput(event: any): void {
+    const tipo = this.personaSeleccionada.tipoDocumento;
+    let valor = event.target.value.replace(/\D/g, ''); // Solo permite números
+
+    if (tipo === 'DNI') {
+      if (valor.length > 8) {
+        valor = valor.slice(0, 8); // Máximo 8 dígitos para DNI
+      }
+    } else {
+      if (valor.length > 15) {
+        valor = valor.slice(0, 15); // Máximo 15 para RUC u otros
+      }
+    }
+
+    this.personaSeleccionada.documento = valor;
+    event.target.value = valor; // Fuerza la vista del input a reflejar el corte
   }
 
   private toggleModal(action: 'show' | 'hide'): void {
@@ -116,7 +142,7 @@ export class ClienteListComponent implements OnInit {
 
   private crearPersonaVacia(): Persona {
     return {
-      tipoDocumento: '',
+      tipoDocumento: 'DNI',
       documento: '',
       nombre: '',
       apellido: '',
@@ -162,8 +188,9 @@ export class ClienteListComponent implements OnInit {
     const personaActualizada: Persona = {
         ...p,
         estado: nuevoEstado,
+        idTipoPersona: 3,
         clave: p.clave && p.clave.trim() !== '' ? p.clave : '**********',
-        sedes: p.sedes || []
+        sedes: (p.sedes || []).map((s: any) => ({ idSede: s.idSede, codigo: s.codigo, nombre: s.nombre }))
     };
 
     this.service.actualizar(personaActualizada.idPersona!, personaActualizada).subscribe({

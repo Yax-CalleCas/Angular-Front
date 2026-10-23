@@ -69,7 +69,7 @@
           <td class="center">
             <div class="row-actions">
               <!-- Botón Editar -->
-              <button class="icon-btn" (click)="editar(p)" title="Editar" aria-label="Editar cliente"
+              <button class="icon-btn" (click)="editar(p)" title="Editar" aria-label="Editar persona"
                       data-bs-toggle="modal" data-bs-target="#modalPersona">
                 <i class="bi bi-pencil-square"></i>
               </button>
@@ -79,7 +79,7 @@
                       [ngClass]="p.estado ? 'warning' : 'success'"
                       (click)="cambiarEstado(p)"
                       [title]="p.estado ? 'Bloquear' : 'Desbloquear'"
-                      [aria-label]="p.estado ? 'Bloquear cliente' : 'Desbloquear cliente'">
+                      [aria-label]="p.estado ? 'Bloquear persona' : 'Desbloquear persona'">
                 <i class="bi" [ngClass]="p.estado ? 'bi-slash-circle' : 'bi-check-circle'"></i>
               </button>
             </div>
@@ -136,19 +136,28 @@
               <label class="label-sy">Tipo de documento</label>
               <select class="input-sy" name="tipo" required
                       [ngModel]="personaSeleccionada().tipoDocumento"
-                      (ngModelChange)="personaSeleccionada.update(p => ({...p, tipoDocumento: $event}))">
+                      (ngModelChange)="personaSeleccionada.update(p => ({...p, tipoDocumento: $event, documento: ''}))">
                 <option value="" disabled>Seleccione...</option>
                 <option value="DNI">DNI</option>
                 <option value="CARNE EXTRANJERIA">CARNE EXTRANJERIA</option>
                 <option value="RUC">RUC</option>
               </select>
             </div>
+
             <div class="col-md-7">
               <label class="label-sy">Número de documento</label>
               <input class="input-sy mono" name="doc" required
-                     [ngModel]="personaSeleccionada().documento"
-                     (ngModelChange)="personaSeleccionada.update(p => ({...p, documento: $event}))">
+                     [attr.maxlength]="personaSeleccionada().tipoDocumento === 'DNI' ? '8' : '15'"
+                     [value]="personaSeleccionada().documento"
+                     (input)="onDocumentoInput($event)"
+                     placeholder="Ingrese número...">
+
+              <div class="hint text-muted small mt-1">
+                <span *ngIf="personaSeleccionada().tipoDocumento === 'DNI'">El DNI debe tener exactamente 8 dígitos.</span>
+                <span *ngIf="personaSeleccionada().tipoDocumento !== 'DNI'">Debe tener entre 8 y 15 caracteres.</span>
+              </div>
             </div>
+
             <div class="col-md-6">
               <label class="label-sy">Nombre</label>
               <input class="input-sy" name="nombre" required

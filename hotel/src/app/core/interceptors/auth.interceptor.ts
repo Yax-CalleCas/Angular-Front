@@ -1,6 +1,7 @@
 // src/app/core/interceptors/auth.interceptor.ts
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
-import { inject } from '@angular/core';
+import { inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
@@ -15,6 +16,7 @@ const RUTAS_PUBLICAS = [
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
+  const platformId = inject(PLATFORM_ID);
   const token = authService.getToken();
 
   const esPublico = RUTAS_PUBLICAS.some(ruta => req.url.includes(ruta));
@@ -44,10 +46,17 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Solo cerramos sesión si el 401 viene de un endpoint protegido
-      if (error.status === 401 && !esPublico) {
-        authService.logout();
-        router.navigate(['/login']);
+      // Solo en el navegador: en SSR no hay localStorage ni sesión que cerrar.
+      if (error.status === 401 && !esPublico && isPlatformBrowser(platformId)) {
+        // Cerramos sesión únicamente si el token realmente venció o ya no existe.
+        // Un 401 con token vigente suele ser un problema del microservicio
+        // (secreto JWT distinto, ruta sin permiso): no debe tumbar la sesión.
+        if (!authService.getToken() || authService.isTokenExpired()) {
+          authService.logout();
+          router.navigate(['/login']);
+        } else {
+          console.warn(`401 en ${req.url} con token vigente: revisar el secreto JWT o los permisos de ese microservicio.`);
+        }
       }
       return throwError(() => error);
     })

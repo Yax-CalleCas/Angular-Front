@@ -72,7 +72,29 @@ export class AuthService {
     return [];
   }
 
+  /** Lee el payload del JWT (base64url) sin validar la firma. */
+  private decodificarPayload(token: string): { exp?: number } | null {
+    try {
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const relleno = '='.repeat((4 - (base64.length % 4)) % 4);
+      return JSON.parse(atob(base64 + relleno));
+    } catch {
+      return null;
+    }
+  }
+
+  /** true si no hay token, está malformado o ya venció (margen de 5 s). */
+  isTokenExpired(token: string | null = this.getToken()): boolean {
+    if (!token) return true;
+    const payload = this.decodificarPayload(token);
+    if (!payload) return true;
+    if (!payload.exp) return false; // sin "exp": se asume vigente
+    return payload.exp * 1000 <= Date.now() + 5000;
+  }
+
+  /** Hay sesión solo si existe token y todavía no venció. */
   isLoggedIn(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    return !!token && !this.isTokenExpired(token);
   }
 }

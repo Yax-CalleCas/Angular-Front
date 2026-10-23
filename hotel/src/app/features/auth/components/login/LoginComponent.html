@@ -1,12 +1,32 @@
 <main class="login-container">
   <!-- Panel Izquierdo: Editorial / Fotográfico (Azul noche Arequipeña) -->
   <aside class="login-brand-banner">
+    <!-- Scrim y Fondo Fotográfico simulado -->
+    <div class="brand-bg-overlay" style="background-image: url('https://wcm.transat.com/getmedia/e9f0a5e0-329c-4c6e-b651-231539bd9e1a/lim-innside-miraflores-hotel-01.jpg.aspx?width=2048&height=1365&ext=.jpg');"></div>
+    <div class="brand-scrim"></div>
+
     <div class="brand-content">
-      <span class="brand-subtitle">Cadena Hotelera Demo · es-PE</span>
-      <h1>Sillar y Tinta</h1>
-      <p>
-        Hoteles de demostración en Lima y Arequipa. Gestión operativa, control centralizado y supervisión de estadías.
-      </p>
+      <!-- Contenedor para la imagen centrada (Pega tu URL aquí) -->
+      <div class="brand-image-container">
+        <img src="https://w1.pngwing.com/pngs/225/721/png-transparent-cartoon-star-hotel-resort-inn-motel-gratis-accommodation-text.png" alt="Sillar y Tinta Logo" class="brand-center-image">
+      </div>
+
+      <div class="brand-badge">
+        <span class="badge-dot"></span>
+        <span>Cadena Hotelera Demo · es-PE</span>
+      </div>
+
+      <div class="brand-titles">
+        <h1 class="font-display">Sillar y Tinta</h1>
+        <p>
+          Hoteles de demostración en Lima y Arequipa. Gestión operativa, control centralizado y supervisión de estadías.
+        </p>
+      </div>
+
+      <div class="brand-footer-info">
+        <span>Sistema de Gestión V2.4</span>
+        <span>Seguridad Garantizada</span>
+      </div>
     </div>
   </aside>
 
@@ -14,7 +34,7 @@
   <section class="login-card-wrapper">
     <div class="login-card">
       <header class="login-header">
-        <h2>iniciar sesión</h2>
+        <h2>Iniciar Sesión</h2>
         <p>Introduce tus credenciales para acceder al panel administrativo</p>
       </header>
 
@@ -26,53 +46,62 @@
         </div>
       }
 
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form" novalidate>
         <!-- Campo Correo -->
         <div class="form-group">
-          <label for="correo">correo electrónico</label>
-          <input
-            id="correo"
-            formControlName="correo"
-            type="email"
-            placeholder="correo@ejemplo.com"
-            [class.input-error]="loginForm.get('correo')?.touched && loginForm.get('correo')?.invalid"
-            autocomplete="email"
-          >
+          <label for="correo">Correo Electrónico</label>
+          <div class="input-wrapper">
+            <input
+              id="correo"
+              formControlName="correo"
+              type="email"
+              placeholder="correo@ejemplo.com"
+              [class.input-error]="loginForm.get('correo')?.touched && loginForm.get('correo')?.invalid"
+              autocomplete="email"
+            >
+          </div>
           @if (loginForm.get('correo')?.touched && loginForm.get('correo')?.hasError('required')) {
-            <small class="error-text">ingresa tu correo</small>
+            <small class="error-text">Ingresa tu correo electrónico</small>
           } @else if (loginForm.get('correo')?.touched && loginForm.get('correo')?.hasError('email')) {
-            <small class="error-text">correo inválido</small>
+            <small class="error-text">Formato de correo inválido</small>
           }
         </div>
 
         <!-- Campo Contraseña -->
         <div class="form-group">
-          <label for="clave">contraseña</label>
-          <input
-            id="clave"
-            formControlName="clave"
-            type="password"
-            placeholder="••••••••••••"
-            [class.input-error]="loginForm.get('clave')?.touched && loginForm.get('clave')?.invalid"
-            autocomplete="current-password"
-          >
+          <div class="label-row">
+            <label for="clave">Contraseña</label>
+          </div>
+          <div class="input-wrapper">
+            <input
+              id="clave"
+              formControlName="clave"
+              type="password"
+              placeholder="••••••••••••"
+              [class.input-error]="loginForm.get('clave')?.touched && loginForm.get('clave')?.invalid"
+              autocomplete="current-password"
+            >
+          </div>
           @if (loginForm.get('clave')?.touched && loginForm.get('clave')?.hasError('required')) {
-            <small class="error-text">ingresa tu contraseña</small>
+            <small class="error-text">Ingresa tu contraseña</small>
           }
         </div>
 
         <!-- Botón de Envío con Estado de Carga -->
         <button type="submit" [disabled]="loginForm.invalid || isLoading" class="btn-primary">
           @if (isLoading) {
-            <span class="spinner-text">verificando accesos...</span>
+            <span class="spinner-container">
+              <span class="spinner"></span>
+              <span class="spinner-text">Verificando accesos...</span>
+            </span>
           } @else {
-            <span>ingresar al sistema</span>
+            <span>Ingresar al Sistema</span>
           }
         </button>
       </form>
 
       <footer class="login-footer-note">
-        <p>acceso exclusivo para personal autorizado y clientes registrados.</p>
+        <p>Acceso exclusivo para personal autorizado y clientes registrados.</p>
       </footer>
     </div>
   </section>

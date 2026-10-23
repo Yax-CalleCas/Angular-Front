@@ -1,0 +1,72 @@
+<section class="dashboard">
+  <header class="dashboard-header">
+    <h2>Estadísticas en tiempo real</h2>
+    <span class="live-badge">
+      <span class="live-dot"></span>
+      En vivo
+    </span>
+  </header>
+
+  <!-- Error -->
+  <div *ngIf="errorMensaje" class="error-banner" role="alert">
+    <i class="bi bi-exclamation-triangle-fill error-icon"></i>
+    <p>{{ errorMensaje }}</p>
+  </div>
+
+  <!-- Datos listos -->
+  <ng-container *ngIf="estadisticas$ | async as stats; else sinDatos">
+    <div class="stats-grid">
+      <article class="stat-card stat-card--ventas">
+        <div class="stat-icon"><i class="bi bi-cart3"></i></div>
+        <div class="stat-body">
+          <h3>Ventas hoy</h3>
+          <p class="stat-value" aria-live="polite">{{ stats.ventasHoy }}</p>
+        </div>
+      </article>
+
+      <article class="stat-card stat-card--ingresos">
+        <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
+        <div class="stat-body">
+          <h3>Ingresos por ventas</h3>
+          <p class="stat-value" aria-live="polite">
+            <span class="currency">S/</span>{{ stats.ingresoVentasHoy | number:'1.2-2' }}
+          </p>
+        </div>
+      </article>
+
+      <article class="stat-card stat-card--estancias">
+        <div class="stat-icon"><i class="bi bi-door-open"></i></div>
+        <div class="stat-body">
+          <h3>Estancias activas</h3>
+          <p class="stat-value" aria-live="polite">{{ stats.estanciasActivas }}</p>
+        </div>
+      </article>
+
+      <article class="stat-card stat-card--total">
+        <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="stat-body">
+          <h3>Ingreso total hoy</h3>
+          <p class="stat-value" aria-live="polite">
+            <span class="currency">S/</span>{{ stats.ingresoTotalHoy | number:'1.2-2' }}
+          </p>
+        </div>
+      </article>
+    </div>
+  </ng-container>
+
+  <!-- Cargando (skeleton) -->
+  <ng-template #sinDatos>
+    <div *ngIf="cargando" aria-busy="true">
+      <div class="stats-grid">
+        <div class="stat-card stat-card--skeleton" *ngFor="let i of [1, 2, 3, 4]">
+          <div class="skeleton skeleton-icon"></div>
+          <div class="stat-body">
+            <div class="skeleton skeleton-line short"></div>
+            <div class="skeleton skeleton-line long"></div>
+          </div>
+        </div>
+      </div>
+      <p class="loading-text">Conectando con el servicio de estadísticas...</p>
+    </div>
+  </ng-template>
+</section>

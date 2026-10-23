@@ -1,50 +1,35 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, shareReplay, tap } from 'rxjs';
-
-import { ApiResponse } from '../../core/models/ApiResponse';
-import { EstadoHabitacionResponseDTO } from '../models/estado-habitacion.model';
+import { Observable } from 'rxjs';
+import { ApiResponse } from '../models/ApiResponse';
+import { EstadoHabitacionResponseDTO, EstadoHabitacionRequestDTO } from '../models/Habitacion';
 
 @Injectable({ providedIn: 'root' })
 export class EstadoHabitacionService {
   private readonly http = inject(HttpClient);
-
-  // Corregido para apuntar a /api/estadohabitacion
   private readonly baseUrl = '/gateway/habitaciones/api/estadohabitacion';
-  private listarCache$?: Observable<ApiResponse<EstadoHabitacionResponseDTO[]>>;
 
   listar(): Observable<ApiResponse<EstadoHabitacionResponseDTO[]>> {
-    if (!this.listarCache$) {
-      this.listarCache$ = this.http.get<ApiResponse<EstadoHabitacionResponseDTO[]>>(`${this.baseUrl}/listar`).pipe(
-        shareReplay(1)
-      );
-    }
-    return this.listarCache$;
+    return this.http.get<ApiResponse<EstadoHabitacionResponseDTO[]>>(`${this.baseUrl}/listar`);
   }
 
-  private invalidateCache(): void {
-    this.listarCache$ = undefined;
-  }
-
-  buscar(id: number): Observable<ApiResponse<EstadoHabitacionResponseDTO>> {
+  buscarPorId(id: number): Observable<ApiResponse<EstadoHabitacionResponseDTO>> {
     return this.http.get<ApiResponse<EstadoHabitacionResponseDTO>>(`${this.baseUrl}/buscar/${id}`);
   }
 
-  registrar(estado: EstadoHabitacionResponseDTO): Observable<ApiResponse<EstadoHabitacionResponseDTO>> {
-    return this.http.post<ApiResponse<EstadoHabitacionResponseDTO>>(`${this.baseUrl}/registrar`, estado).pipe(
-      tap(() => this.invalidateCache())
-    );
+  guardar(dto: EstadoHabitacionRequestDTO): Observable<ApiResponse<EstadoHabitacionResponseDTO>> {
+    return this.http.post<ApiResponse<EstadoHabitacionResponseDTO>>(`${this.baseUrl}/registrar`, dto);
   }
 
-  actualizar(id: number, estado: EstadoHabitacionResponseDTO): Observable<ApiResponse<EstadoHabitacionResponseDTO>> {
-    return this.http.put<ApiResponse<EstadoHabitacionResponseDTO>>(`${this.baseUrl}/actualizar/${id}`, estado).pipe(
-      tap(() => this.invalidateCache())
-    );
+  registrar(dto: EstadoHabitacionRequestDTO): Observable<ApiResponse<EstadoHabitacionResponseDTO>> {
+    return this.guardar(dto); // Alias por si algún componente llama a .registrar()
+  }
+
+  actualizar(id: number, dto: EstadoHabitacionRequestDTO): Observable<ApiResponse<EstadoHabitacionResponseDTO>> {
+    return this.http.put<ApiResponse<EstadoHabitacionResponseDTO>>(`${this.baseUrl}/actualizar/${id}`, dto);
   }
 
   eliminar(id: number): Observable<ApiResponse<null>> {
-    return this.http.delete<ApiResponse<null>>(`${this.baseUrl}/eliminar/${id}`).pipe(
-      tap(() => this.invalidateCache())
-    );
+    return this.http.delete<ApiResponse<null>>(`${this.baseUrl}/eliminar/${id}`);
   }
 }

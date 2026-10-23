@@ -1,136 +1,353 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+  signal
+} from '@angular/core';
+import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
+
+import { HttpErrorResponse } from '@angular/common/http';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
+
 import { RecepcionService } from '../../../../core/services/recepcion.service';
 import { VentaService } from '../../../../core/services/venta.service';
 import { PersonaService } from '../../../../core/services/persona.service';
+import { HabitacionService } from '../../../../core/services/habitacion.service';
 import { Venta } from '../../../../core/models/Venta';
-import { DetalleVenta } from '../../../../core/models/detalleventa';
 import { RecepcionResponseDTO } from '../../../../core/models/recepcion.model';
-import { Persona } from '../../../../core/models/persona.model';
-import Swal from 'sweetalert2';
+
+type EstadoPantalla = 'cargando' | 'listo' | 'error';
+type EstadoVenta = 'PAGADO' | 'PENDIENTE' | 'DEBE';
+type EstadoVentaVista = EstadoVenta | 'OTRO';
+
+export interface LineaConsumo {
+  id: string;
+  producto: string;
+  cantidad: number;
+  precioUnitario: number;
+  subTotal: number;
+  estadoVenta: EstadoVentaVista;
+}
+
+/** Vista minima del cliente: no se conserva el resto de campos de Persona. */
+export interface ClienteResumen {
+  nombreCompleto: string;
+  documento: string | null;
+  correo: string | null;
+}
+
+/** Montos del comprobante. Todos provienen del servidor, salvo las sumas de consumos. */
+export interface ResumenLiquidacion {
+  alojamiento: number;
+  penalidad: number;
+  subtotalEstancia: number;
+  adelanto: number;
+  saldoEstancia: number;
+  saldoAFavorCliente: number;
+  totalConsumos: number;
+  consumosPendientes: number;
+  totalAPagar: number;
+}
+
+interface DatosPantalla {
+  recepcion: RecepcionResponseDTO;
+  ventas: Venta[];
+  cliente: ClienteResumen | null;
+  numeroHabitacion: string | null;
+}
+
+class RecepcionNoEncontradaError extends Error {
+  constructor() {
+    super('No se encontró información para esta recepción.');
+  }
+}
+
+const ESTADOS_VENTA: readonly EstadoVenta[] = ['PAGADO', 'PENDIENTE', 'DEBE'];
+const ESTADOS_CON_DEUDA: readonly EstadoVentaVista[] = ['PENDIENTE', 'DEBE'];
+const LONGITUD_MAX_MENSAJE = 300;
+
+function numeroSeguro(valor: number | null | undefined): number {
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : 0;
+}
+
+function redondear2(valor: number): number {
+  return Math.round(valor * 100) / 100;
+}
+
+/** Suma en centimos enteros para evitar errores de coma flotante. */
+function sumar(valores: readonly number[]): number {
+  return valores.reduce((total, v) => total + Math.round(v * 100), 0) / 100;
+}
+
+function normalizarEstadoVenta(valor: string | null | undefined): EstadoVentaVista {
+  const estado = (valor ?? '').trim().toUpperCase();
+  return (ESTADOS_VENTA as readonly string[]).includes(estado) ? (estado as EstadoVenta) : 'OTRO';
+}
+
+function extraerMensajeServidor(cuerpo: unknown): string | null {
+  let texto: string | null = null;
+
+  if (typeof cuerpo === 'string') {
+    texto = cuerpo;
+  } else if (typeof cuerpo === 'object' && cuerpo !== null && 'message' in cuerpo) {
+    const mensaje = (cuerpo as { message?: unknown }).message;
+    texto = typeof mensaje === 'string' ? mensaje : null;
+  }
+
+  const limpio = texto?.trim() ?? '';
+  if (limpio === '' || limpio.startsWith('<')) {
+    return null;
+  }
+  return limpio.slice(0, LONGITUD_MAX_MENSAJE);
+}
+
+/** Los errores 5xx nunca exponen el detalle del servidor; los 4xx muestran su mensaje de negocio. */
+function mensajeDeError(err: unknown, mensajePorDefecto: string): string {
+  if (err instanceof RecepcionNoEncontradaError) {
+    return err.message;
+  }
+  if (!(err instanceof HttpErrorResponse)) {
+    return mensajePorDefecto;
+  }
+  if (err.status === 0) {
+    return 'No se pudo contactar con el servidor. Verifique su conexión e intente nuevamente.';
+  }
+  if (err.status === 401 || err.status === 403) {
+    return 'Su sesión expiró o no tiene permisos para ver este comprobante.';
+  }
+  if (err.status >= 500) {
+    return mensajePorDefecto;
+  }
+  return extraerMensajeServidor(err.error) ?? mensajePorDefecto;
+}
 
 @Component({
   selector: 'app-resumensalida',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterLink, NgClass, DatePipe, DecimalPipe],
   templateUrl: './resumensalida.html',
-  styleUrls: ['./resumensalida.scss']
+  styleUrls: ['./resumensalida.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Resumensalida implements OnInit {
-  dateNow = new Date();
   private readonly route = inject(ActivatedRoute);
-  private readonly recService = inject(RecepcionService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly recepcionService = inject(RecepcionService);
   private readonly ventaService = inject(VentaService);
-  private readonly personaService = inject(PersonaService); // Inyectamos PersonaService
+  private readonly personaService = inject(PersonaService);
+  private readonly habitacionService = inject(HabitacionService);
 
-  // Estados reactivos con Signals
-  datos = signal<RecepcionResponseDTO | null>(null);
-  listaPersonas = signal<Persona[]>([]); // Almacena el listado de personas
-  servicios = signal<any[]>([]);
-  isLoading = signal<boolean>(true);
-  fechaSalidaCalculada: Date = new Date();
+  readonly fechaEmision = new Date();
 
-  // Computado para obtener los datos exactos del cliente vinculado
-  cliente = computed(() => {
+  // Estado de la pantalla
+  readonly estado = signal<EstadoPantalla>('cargando');
+  readonly mensajeError = signal<string | null>(null);
+  readonly idRecepcion = signal<number | null>(null);
+
+  // Datos
+  readonly datos = signal<RecepcionResponseDTO | null>(null);
+  readonly consumos = signal<readonly LineaConsumo[]>([]);
+  readonly clienteCargado = signal<ClienteResumen | null>(null);
+  readonly numeroHabitacionCargado = signal<string | null>(null);
+
+  /** La recepcion esta cerrada: los montos del servidor ya son los definitivos. */
+  readonly esDefinitivo = computed(() => this.datos()?.estado === false);
+
+  readonly cliente = computed<ClienteResumen | null>(() => {
+    const cargado = this.clienteCargado();
+    if (cargado) {
+      return cargado;
+    }
     const d = this.datos();
-    if (!d || !d.idCliente) return null;
-    return this.listaPersonas().find(p => p.idPersona === d.idCliente) || null;
+    const nombre = `${d?.nombreCliente ?? ''} ${d?.apellidoCliente ?? ''}`.trim();
+    if (!d || nombre === '') {
+      return null;
+    }
+    return {
+      nombreCompleto: nombre,
+      documento: d.documentoCliente ?? d.documento ?? null,
+      correo: d.correoCliente ?? d.correo ?? null
+    };
+  });
+
+  readonly habitacion = computed(() => {
+    const d = this.datos();
+    if (!d) {
+      return '';
+    }
+    return this.numeroHabitacionCargado() ?? d.numeroHabitacion ?? `ID ${d.idHabitacion}`;
+  });
+
+  /** Fecha real de salida registrada por el servidor; null mientras la estancia siga activa. */
+  readonly fechaSalidaConfirmada = computed<Date | null>(() => {
+    const valor = this.datos()?.fechaSalidaConfirmacion;
+    if (!valor) {
+      return null;
+    }
+    const fecha = new Date(valor);
+    return Number.isNaN(fecha.getTime()) ? null : fecha;
+  });
+
+  readonly consumosConEstadoDesconocido = computed(
+    () => this.consumos().filter(c => c.estadoVenta === 'OTRO').length
+  );
+
+  readonly liquidacion = computed<ResumenLiquidacion | null>(() => {
+    const d = this.datos();
+    if (!d) {
+      return null;
+    }
+
+    // Tras el check-out el backend deja en precioInicial el alojamiento ya facturado
+    // y en precioRestante el saldo de estancia (alojamiento + penalidad - pagado).
+    const alojamiento = numeroSeguro(d.precioInicial);
+    const penalidad = numeroSeguro(d.costoPenalidad);
+    const adelanto = numeroSeguro(d.adelanto);
+    const saldoEstancia = numeroSeguro(d.precioRestante);
+    const subtotalEstancia = sumar([alojamiento, penalidad]);
+
+    const lineas = this.consumos();
+    const totalConsumos = sumar(lineas.map(c => c.subTotal));
+    const consumosPendientes = sumar(
+      lineas.filter(c => ESTADOS_CON_DEUDA.includes(c.estadoVenta)).map(c => c.subTotal)
+    );
+
+    return {
+      alojamiento,
+      penalidad,
+      subtotalEstancia,
+      adelanto,
+      saldoEstancia,
+      saldoAFavorCliente: redondear2(Math.max(adelanto - subtotalEstancia, 0)),
+      totalConsumos,
+      consumosPendientes,
+      totalAPagar: sumar([saldoEstancia, consumosPendientes])
+    };
   });
 
   ngOnInit(): void {
-    this.cargarClientes(); // Cargamos el catálogo de clientes al iniciar
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    if (id) {
-      this.cargarDatosCompletos(id);
-    } else {
-      this.isLoading.set(false);
-      Swal.fire('Error', 'ID de recepción no válido en el resumen', 'error');
+    const crudo = this.route.snapshot.paramMap.get('id');
+    const id = crudo !== null ? Number(crudo) : Number.NaN;
+
+    if (!Number.isInteger(id) || id <= 0) {
+      this.mensajeError.set('El identificador de la recepción no es válido.');
+      this.estado.set('error');
+      return;
+    }
+
+    this.idRecepcion.set(id);
+    this.cargarDatos(id);
+  }
+
+  reintentar(): void {
+    const id = this.idRecepcion();
+    if (id !== null) {
+      this.cargarDatos(id);
     }
   }
 
-  private cargarClientes(): void {
-    this.personaService.listar().subscribe({
-      next: (personas: any) => {
-        const lista = personas?.data ?? personas ?? [];
-        this.listaPersonas.set(lista);
-      },
-      error: err => {
-        console.error('Error al cargar la lista de personas:', err);
-      }
-    });
-  }
-
-  // Calcula el subtotal exacto de la lista de consumos / ventas pendientes o registrados
-  calcularTotalConsumos(): number {
-    return this.servicios().reduce((acc, curr) => acc + Number(curr.subTotal || 0), 0);
-  }
-
-  // Calcula el total final cumpliendo la regla de negocio exacta: Saldo Restante + Penalidad + Consumos
-  calcularTotalFinal(): number {
-    const d = this.datos();
-    if (!d) return 0;
-
-    const saldoHabitacion = Number(d.precioRestante ?? ((Number(d.totalPagado) || 0) - (Number(d.adelanto) || 0)));
-    const penalidad = Number(d.costoPenalidad || 0);
-    const consumos = this.calcularTotalConsumos();
-
-    return Number((saldoHabitacion + penalidad + consumos).toFixed(2));
-  }
-
-  cargarDatosCompletos(idRecepcion: number): void {
-    this.isLoading.set(true);
-
-    this.recService.buscarPorId(idRecepcion).subscribe({
-      next: (res: any) => {
-        const d = res?.data ?? res;
-        if (d) {
-          this.datos.set(d);
-          if (d?.fechaSalidaConfirmacion || d?.fechaSalida) {
-            this.fechaSalidaCalculada = new Date(d.fechaSalidaConfirmacion || d.fechaSalida);
-          }
-          this.cargarConsumos(idRecepcion);
-        } else {
-          this.isLoading.set(false);
-          Swal.fire('Atención', 'No se encontró información para esta recepción.', 'warning');
-        }
-      },
-      error: (err) => {
-        console.error("Error crítico al cargar resumen de recepción:", err);
-        this.isLoading.set(false);
-        Swal.fire({
-          title: 'Error de Datos',
-          text: 'No se pudo obtener el detalle de la recepción para el comprobante.',
-          icon: 'error'
-        });
-      }
-    });
-  }
-
-  private cargarConsumos(idRecepcion: number): void {
-    this.ventaService.buscarPorRecepcion(idRecepcion).subscribe({
-      next: (res: any) => {
-        const listaVentas: Venta[] = res?.data ?? res ?? [];
-
-        const todosLosDetalles = listaVentas.flatMap((v: Venta) =>
-          (v.detalleVentas || []).map((det: DetalleVenta) => ({
-            ...det,
-            producto: det.nombreProducto || 'Producto de Inventario',
-            subTotal: Number(det.subTotal || (Number(det.cantidad || 0) * Number(det.precioUnitario || 0)))
-          }))
-        );
-
-        this.servicios.set(todosLosDetalles);
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        console.error("Error al cargar consumos de la venta:", err);
-        this.isLoading.set(false);
-      }
-    });
-  }
-
   imprimir(): void {
-    window.print();
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Carga de datos
+  // ---------------------------------------------------------------------------
+
+  private cargarDatos(idRecepcion: number): void {
+    this.estado.set('cargando');
+    this.mensajeError.set(null);
+
+    this.recepcionService
+      .buscarPorId(idRecepcion)
+      .pipe(
+        switchMap(respuesta => {
+          const recepcion = respuesta.data;
+          if (!recepcion) {
+            return throwError(() => new RecepcionNoEncontradaError());
+          }
+          return forkJoin({
+            // Critico: sin los consumos el comprobante saldria con un total incorrecto.
+            ventas: this.ventaService
+              .buscarPorRecepcion(recepcion.idRecepcion)
+              .pipe(map(r => r.data ?? [])),
+            // No criticos: si fallan, se usan los datos que traiga la recepcion.
+            cliente: this.cargarCliente(recepcion.idCliente),
+            numeroHabitacion: this.cargarNumeroHabitacion(recepcion.idHabitacion)
+          }).pipe(map((extra): DatosPantalla => ({ recepcion, ...extra })));
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: datos => this.aplicarDatos(datos),
+        error: (err: unknown) => {
+          this.mensajeError.set(mensajeDeError(err, 'No se pudo obtener el detalle de la recepción para el comprobante.'));
+          this.estado.set('error');
+        }
+      });
+  }
+
+  private cargarCliente(idCliente: number): Observable<ClienteResumen | null> {
+    return this.personaService.obtenerPorId(idCliente).pipe(
+      map(
+        (persona): ClienteResumen => ({
+          nombreCompleto: `${persona.nombre} ${persona.apellido}`.trim(),
+          documento: persona.documento || null,
+          correo: persona.correo || null
+        })
+      ),
+      catchError(() => of(null))
+    );
+  }
+
+  /** El backend de recepcion no devuelve el numero de habitacion; se consulta aparte. */
+  private cargarNumeroHabitacion(idHabitacion: number): Observable<string | null> {
+    return this.habitacionService.buscarPorId(idHabitacion).pipe(
+      map(respuesta => {
+        const numero = respuesta.data?.numero;
+        return numero !== undefined && numero !== null ? String(numero) : null;
+      }),
+      catchError(() => of(null))
+    );
+  }
+
+  private aplicarDatos({ recepcion, ventas, cliente, numeroHabitacion }: DatosPantalla): void {
+    this.datos.set(recepcion);
+    this.clienteCargado.set(cliente);
+    this.numeroHabitacionCargado.set(numeroHabitacion);
+    this.consumos.set(this.mapearConsumos(ventas));
+    this.estado.set('listo');
+  }
+
+  private mapearConsumos(ventas: Venta[]): LineaConsumo[] {
+    return ventas.flatMap((venta, i) => {
+      const estadoVenta = normalizarEstadoVenta(venta.estado);
+
+      return (venta.detalleVentas ?? []).map((detalle, j): LineaConsumo => {
+        const cantidad = numeroSeguro(detalle.cantidad);
+        const precioUnitario = numeroSeguro(detalle.precioUnitario);
+        const subTotal =
+          detalle.subTotal !== undefined && detalle.subTotal !== null
+            ? numeroSeguro(detalle.subTotal)
+            : redondear2(cantidad * precioUnitario);
+
+        return {
+          id: `${venta.idVenta ?? `v${i}`}-${detalle.idDetalleVenta ?? `d${j}`}`,
+          producto: detalle.nombreProducto?.trim() || 'Producto de inventario',
+          cantidad,
+          precioUnitario,
+          subTotal,
+          estadoVenta
+        };
+      });
+    });
   }
 }

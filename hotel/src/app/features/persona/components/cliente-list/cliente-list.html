@@ -22,9 +22,10 @@
     <div>
       <label class="label-sy" for="registros">Registros</label>
       <select id="registros" class="input-sy select-sm" [(ngModel)]="itemsPerPage" (change)="currentPage=1">
-        <option value="10">10</option>
-        <option value="25">25</option>
-        <option value="50">50</option>
+        <option [value]="7">7</option>
+        <option [value]="10">10</option>
+        <option [value]="25">25</option>
+        <option [value]="50">50</option>
       </select>
     </div>
   </div>
@@ -61,22 +62,22 @@
             </button>
           </td>
           <td class="center">
-  <div class="row-actions">
-    <!-- Botón Editar -->
-    <button class="icon-btn" (click)="editarCliente(p)" title="Editar" aria-label="Editar cliente">
-      <i class="bi bi-pencil-square"></i>
-    </button>
+            <div class="row-actions">
+              <!-- Botón Editar -->
+              <button class="icon-btn" (click)="editarCliente(p)" title="Editar" aria-label="Editar cliente">
+                <i class="bi bi-pencil-square"></i>
+              </button>
 
-    <!-- Botón Bloquear / Desbloquear dinámico -->
-    <button class="icon-btn"
-            [ngClass]="p.estado ? 'warning' : 'success'"
-            (click)="cambiarEstado(p)"
-            [title]="p.estado ? 'Bloquear' : 'Desbloquear'"
-            [aria-label]="p.estado ? 'Bloquear cliente' : 'Desbloquear cliente'">
-      <i class="bi" [ngClass]="p.estado ? 'bi-slash-circle' : 'bi-check-circle'"></i>
-    </button>
-  </div>
-</td>
+              <!-- Botón Bloquear / Desbloquear dinámico -->
+              <button class="icon-btn"
+                      [ngClass]="p.estado ? 'warning' : 'success'"
+                      (click)="cambiarEstado(p)"
+                      [title]="p.estado ? 'Bloquear' : 'Desbloquear'"
+                      [aria-label]="p.estado ? 'Bloquear cliente' : 'Desbloquear cliente'">
+                <i class="bi" [ngClass]="p.estado ? 'bi-slash-circle' : 'bi-check-circle'"></i>
+              </button>
+            </div>
+          </td>
         </tr>
 
         <tr *ngIf="paginatedPersonas.length === 0">
@@ -122,17 +123,29 @@
           <div class="row g-3 mb-4">
             <div class="col-md-5">
               <label class="label-sy">Tipo de documento</label>
-              <select [(ngModel)]="personaSeleccionada.tipoDocumento" name="tipo" class="input-sy" required>
+              <select [(ngModel)]="personaSeleccionada.tipoDocumento" name="tipo" class="input-sy" required
+                      (ngModelChange)="personaSeleccionada.documento = ''">
                 <option value="" disabled>Seleccione...</option>
                 <option value="DNI">DNI</option>
                 <option value="CARNE EXTRANJERIA">CARNE EXTRANJERIA</option>
                 <option value="RUC">RUC</option>
               </select>
             </div>
+
             <div class="col-md-7">
               <label class="label-sy">Número de documento</label>
-              <input [(ngModel)]="personaSeleccionada.documento" name="doc" class="input-sy mono" required>
+              <input class="input-sy mono" name="doc" required
+                     [attr.maxlength]="personaSeleccionada.tipoDocumento === 'DNI' ? '8' : '15'"
+                     [value]="personaSeleccionada.documento"
+                     (input)="onDocumentoInput($event)"
+                     placeholder="Ingrese número...">
+
+              <div class="hint text-muted small mt-1">
+                <span *ngIf="personaSeleccionada.tipoDocumento === 'DNI'">El DNI debe tener exactamente 8 dígitos.</span>
+                <span *ngIf="personaSeleccionada.tipoDocumento !== 'DNI'">Debe tener entre 8 y 15 caracteres.</span>
+              </div>
             </div>
+
             <div class="col-md-6">
               <label class="label-sy">Nombre</label>
               <input [(ngModel)]="personaSeleccionada.nombre" name="nombre" class="input-sy" required>

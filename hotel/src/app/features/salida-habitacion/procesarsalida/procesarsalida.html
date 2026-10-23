@@ -2,159 +2,247 @@
   <div class="row justify-content-center">
     <div class="col-lg-10">
 
-      <!-- Tarjeta Principal -->
       <div class="card shadow-sm border-0">
 
-        <!-- Cabecera -->
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
           <h5 class="mb-0">
-            <i class="fas fa-sign-out-alt me-2"></i> Procesar Salida y Liberación de Habitación (Check-out)
+            <i class="fas fa-sign-out-alt me-2" aria-hidden="true"></i>
+            Procesar salida y liberación de habitación (check-out)
           </h5>
           <a routerLink="/admin/salida-habitacion" class="btn btn-outline-light btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Volver
+            <i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Volver
           </a>
         </div>
 
         <div class="card-body">
 
-          <!-- Estado de Carga -->
-          @if (isLoading()) {
-            <div class="text-center py-5">
-              <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-              <p class="text-muted mt-3">Cargando detalles del huésped, fechas y consumos...</p>
-            </div>
-          } @else {
+          @switch (estado()) {
 
-            <!-- Información del Huésped y Estancia -->
-            @if (datosHospedaje(); as h) {
-              <div class="card bg-light border mb-4 shadow-sm">
-                <div class="card-body">
-                  <h6 class="text-uppercase text-secondary fw-bold mb-3 border-bottom pb-2">
-                    <i class="fas fa-user-circle me-2"></i> Datos del Huésped y Recepción # {{ h.idRecepcion }}
-                  </h6>
-                  <div class="row g-3">
-                    <div class="col-md-4">
-                      <span class="text-muted d-block small">NOMBRES Y APELLIDOS</span>
-                      <strong class="text-dark">
-                        {{ cliente() ? (cliente()?.nombre + ' ' + cliente()?.apellido) : (h.nombreCliente || 'Cliente N/A') }}
-                      </strong>
-                    </div>
-                    <div class="col-md-4">
-                      <span class="text-muted d-block small">DOCUMENTO (DNI / C.E.)</span>
-                      <strong class="text-dark">
-                        {{ cliente()?.documento || h.documentoCliente || 'Sin documento' }}
-                      </strong>
-                    </div>
-                    <div class="col-md-4">
-                      <span class="text-muted d-block small">CORREO ELECTRÓNICO</span>
-                      <strong class="text-dark">
-                        {{ cliente()?.correo || h.correoCliente || 'No registrado' }}
-                      </strong>
-                    </div>
+            @case ('cargando') {
+              <div class="text-center py-5" role="status" aria-live="polite">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" aria-hidden="true"></div>
+                <p class="text-muted mt-3 mb-0">Cargando detalles del huésped, fechas y consumos...</p>
+              </div>
+            }
 
-                    <div class="col-md-3 mt-3">
-                      <span class="text-muted d-block small">FECHA DE ENTRADA</span>
-                      <span class="fw-semibold text-primary">{{ h.fechaEntrada }}</span>
-                    </div>
-                    <div class="col-md-3 mt-3">
-                      <span class="text-muted d-block small">FECHA SALIDA PROGRAMADA</span>
-                      <span class="fw-semibold text-primary">{{ h.fechaSalida }}</span>
-                    </div>
-                    <div class="col-md-3 mt-3">
-                      <span class="text-muted d-block small">ADELANTO / PAGADO</span>
-                      <span class="fw-semibold text-success">S/. {{ h.adelanto | number:'1.2-2' }}</span>
-                    </div>
-                    <div class="col-md-3 mt-3">
-                      <span class="text-muted d-block small">SALDO PENDIENTE ESTANCIA</span>
-                      <strong class="fs-5 text-danger">S/. {{ h.precioRestante | number:'1.2-2' }}</strong>
-                    </div>
-                  </div>
+            @case ('error') {
+              <div class="alert alert-danger d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3" role="alert">
+                <div>
+                  <strong>No se pudo cargar la información.</strong>
+                  <div>{{ mensajeError() }}</div>
+                </div>
+                <div class="d-flex gap-2">
+                  @if (idHabitacion() !== null) {
+                    <button type="button" class="btn btn-outline-danger btn-sm" (click)="reintentar()">
+                      <i class="fas fa-redo me-1" aria-hidden="true"></i> Reintentar
+                    </button>
+                  }
+                  <a routerLink="/admin/salida-habitacion" class="btn btn-secondary btn-sm">Volver al listado</a>
                 </div>
               </div>
             }
 
-            <!-- Sección de Consumos / Servicios Adicionales -->
-            <div class="card border-0 shadow-sm mb-4">
-              <div class="card-header bg-secondary text-white">
-                <i class="fas fa-concierge-bell me-2"></i> Consumos y Productos Adicionales
-              </div>
-              <div class="card-body p-0">
-                <div class="table-responsive">
-                  <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                      <tr>
-                        <th>Producto / Servicio</th>
-                        <th class="text-center">Cantidad</th>
-                        <th class="text-end">P. Unitario</th>
-                        <th class="text-end">Subtotal</th>
-                        <th class="text-center">Estado Venta</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (s of servicios(); track s.producto) {
-                        <tr>
-                          <td>{{ s.producto }}</td>
-                          <td class="text-center">{{ s.cantidad }}</td>
-                          <td class="text-end">S/. {{ s.precioUnitario | number:'1.2-2' }}</td>
-                          <td class="text-end fw-bold">S/. {{ s.subTotal | number:'1.2-2' }}</td>
-                          <td class="text-center">
-                            <span class="badge" [ngClass]="{
-                              'bg-success': s.estadoVenta === 'PAGADO',
-                              'bg-warning text-dark': s.estadoVenta === 'PENDIENTE',
-                              'bg-danger': s.estadoVenta === 'DEBE'
-                            }">
-                              {{ s.estadoVenta }}
-                            </span>
-                          </td>
-                        </tr>
-                      } @empty {
-                        <tr>
-                          <td colspan="5" class="text-center text-muted py-4">
-                            No hay consumos ni servicios adicionales registrados para esta estancia.
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+            @case ('listo') {
 
-            <!-- Panel de Ajustes de Penalidad y Resumen Financiero Final -->
-            <div class="row g-3 align-items-center bg-light p-3 rounded border">
+              @if (datosHospedaje(); as h) {
 
-              <!-- Input para Costo de Penalidad -->
-              <div class="col-md-4">
-                <label class="form-label fw-bold text-danger">Costo por Penalidad (S/.)</label>
-                <input
-                  type="number"
-                  class="form-control border-danger form-control-lg"
-                  [value]="costoPenalidad()"
-                  (input)="actualizarPenalidad($any($event.target).value)"
-                  min="0"
-                  step="0.01"
-                />
-                <small class="text-muted d-block mt-1">Ajuste por daños o demora en salida.</small>
-              </div>
+                <!-- Huésped y estancia -->
+                <div class="card bg-light border mb-4 shadow-sm">
+                  <div class="card-body">
+                    <h6 class="text-uppercase text-secondary fw-bold mb-3 border-bottom pb-2">
+                      <i class="fas fa-user-circle me-2" aria-hidden="true"></i>
+                      Datos del huésped y recepción # {{ h.idRecepcion }}
+                    </h6>
 
-              <!-- Resumen de Totales y Botón de Ejecución de Check-out -->
-              <div class="col-md-8 text-md-end mt-4 mt-md-0">
-                <div class="mb-2">
-                  <span class="text-muted me-3">Consumos Pendientes: <strong>S/. {{ totalConsumosPendientes() | number:'1.2-2' }}</strong></span>
-                  <span class="text-muted me-3">Penalidad: <strong>S/. {{ costoPenalidad() | number:'1.2-2' }}</strong></span>
-                </div>
-                <div class="mb-3">
-                  <span class="fs-4 fw-bold text-dark me-2">TOTAL NETO A PAGAR:</span>
-                  <span class="fs-3 fw-bold text-success">S/. {{ totalNetoAPagar() | number:'1.2-2' }}</span>
+                    @if (!cliente()) {
+                      <div class="alert alert-warning py-2 small" role="alert">
+                        No se pudieron cargar los datos del cliente. La salida puede procesarse igualmente.
+                      </div>
+                    }
+
+                    <div class="row g-3">
+                      <div class="col-md-4">
+                        <span class="text-muted d-block small">NOMBRES Y APELLIDOS</span>
+                        <strong class="text-dark">{{ cliente()?.nombreCompleto || 'Cliente no disponible' }}</strong>
+                      </div>
+                      <div class="col-md-4">
+                        <span class="text-muted d-block small">DOCUMENTO (DNI / C.E.)</span>
+                        <strong class="text-dark">{{ cliente()?.documento || 'Sin documento' }}</strong>
+                      </div>
+                      <div class="col-md-4">
+                        <span class="text-muted d-block small">CORREO ELECTRÓNICO</span>
+                        <strong class="text-dark">{{ cliente()?.correo || 'No registrado' }}</strong>
+                      </div>
+
+                      <div class="col-md-3 mt-3">
+                        <span class="text-muted d-block small">FECHA DE ENTRADA</span>
+                        <span class="fw-semibold text-primary">{{ h.fechaEntrada | date: 'dd/MM/yyyy' }}</span>
+                      </div>
+                      <div class="col-md-3 mt-3">
+                        <span class="text-muted d-block small">FECHA DE SALIDA PROGRAMADA</span>
+                        <span class="fw-semibold text-primary">{{ h.fechaSalida | date: 'dd/MM/yyyy' }}</span>
+                      </div>
+                      <div class="col-md-3 mt-3">
+                        <span class="text-muted d-block small">ADELANTO / PAGADO</span>
+                        <span class="fw-semibold text-success">S/. {{ h.totalPagado | number: '1.2-2' }}</span>
+                      </div>
+                      <div class="col-md-3 mt-3">
+                        <span class="text-muted d-block small">SALDO ACTUAL DE ESTANCIA</span>
+                        <strong class="fs-5 text-danger">S/. {{ h.precioRestante | number: '1.2-2' }}</strong>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <button class="btn btn-danger btn-lg px-5 shadow fw-bold" (click)="finalizarCheckOut()">
-                  <i class="fas fa-check-circle me-2"></i> Procesar Salida y Liberar Habitación
-                </button>
-              </div>
+                <!-- Consumos -->
+                <div class="card border-0 shadow-sm mb-4">
+                  <div class="card-header bg-secondary text-white">
+                    <i class="fas fa-concierge-bell me-2" aria-hidden="true"></i>
+                    Consumos y productos adicionales
+                  </div>
+                  <div class="card-body p-0">
+                    <div class="table-responsive">
+                      <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                          <tr>
+                            <th scope="col">Producto / servicio</th>
+                            <th scope="col" class="text-center">Cantidad</th>
+                            <th scope="col" class="text-end">P. unitario</th>
+                            <th scope="col" class="text-end">Subtotal</th>
+                            <th scope="col" class="text-center">Estado de venta</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (s of servicios(); track s.id) {
+                            <tr>
+                              <td>{{ s.producto }}</td>
+                              <td class="text-center">{{ s.cantidad }}</td>
+                              <td class="text-end">S/. {{ s.precioUnitario | number: '1.2-2' }}</td>
+                              <td class="text-end fw-bold">S/. {{ s.subTotal | number: '1.2-2' }}</td>
+                              <td class="text-center">
+                                <span class="badge" [ngClass]="{
+                                  'bg-success': s.estadoVenta === 'PAGADO',
+                                  'bg-warning text-dark': s.estadoVenta === 'PENDIENTE',
+                                  'bg-danger': s.estadoVenta === 'DEBE',
+                                  'bg-secondary': s.estadoVenta === 'OTRO'
+                                }">{{ s.estadoVenta === 'OTRO' ? 'SIN CLASIFICAR' : s.estadoVenta }}</span>
+                              </td>
+                            </tr>
+                          } @empty {
+                            <tr>
+                              <td colspan="5" class="text-center text-muted py-4">
+                                No hay consumos ni servicios adicionales registrados para esta estancia.
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
 
-            </div>
+                @if (consumosConEstadoDesconocido() > 0) {
+                  <div class="alert alert-warning small" role="alert">
+                    Hay {{ consumosConEstadoDesconocido() }} consumo(s) con un estado de venta no reconocido.
+                    No se incluyen en el total pendiente; revíselos en el módulo de ventas.
+                  </div>
+                }
 
+                <!-- Liquidación -->
+                <div class="row g-3 bg-light p-3 rounded border">
+
+                  <div class="col-md-5">
+                    <label for="penalidad" class="form-label fw-bold text-danger">Costo por penalidad (S/.)</label>
+                    <input
+                      id="penalidad"
+                      type="number"
+                      inputmode="decimal"
+                      class="form-control border-danger form-control-lg"
+                      [value]="costoPenalidad()"
+                      (input)="onPenalidadInput($event)"
+                      min="0"
+                      step="0.01"
+                      [disabled]="procesando()"
+                    />
+                    <small class="text-muted d-block mt-1">Ajuste por daños o demora en la salida.</small>
+
+                    <label for="observacion" class="form-label fw-bold mt-3">Observación (opcional)</label>
+                    <textarea
+                      id="observacion"
+                      class="form-control"
+                      rows="2"
+                      maxlength="200"
+                      [value]="observacion()"
+                      (input)="onObservacionInput($event)"
+                      [disabled]="procesando()"
+                    ></textarea>
+                  </div>
+
+                  <div class="col-md-7">
+                    @if (liquidacion(); as liq) {
+                      <dl class="mb-3">
+                        <div class="d-flex justify-content-between">
+                          <dt class="fw-normal text-muted">Noches facturadas (estimado)</dt>
+                          <dd class="mb-1">{{ liq.nochesFacturadas }} de {{ liq.nochesReservadas }}</dd>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                          <dt class="fw-normal text-muted">Alojamiento (estimado)</dt>
+                          <dd class="mb-1">S/. {{ liq.alojamiento | number: '1.2-2' }}</dd>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                          <dt class="fw-normal text-muted">Penalidad</dt>
+                          <dd class="mb-1">S/. {{ liq.penalidad | number: '1.2-2' }}</dd>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                          <dt class="fw-normal text-muted">Pagado a la fecha</dt>
+                          <dd class="mb-1">- S/. {{ liq.totalPagado | number: '1.2-2' }}</dd>
+                        </div>
+                        <div class="d-flex justify-content-between border-top pt-2">
+                          <dt class="fw-semibold">Saldo de estancia (estimado)</dt>
+                          <dd class="mb-1 fw-semibold">S/. {{ liq.saldoEstancia | number: '1.2-2' }}</dd>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                          <dt class="fw-normal text-muted">Consumos pendientes de pago</dt>
+                          <dd class="mb-1">S/. {{ liq.consumosPendientes | number: '1.2-2' }}</dd>
+                        </div>
+                      </dl>
+
+                      <div class="text-md-end mb-2">
+                        <span class="fs-5 fw-bold text-dark me-2">TOTAL A COBRAR (ESTIMADO):</span>
+                        <span class="fs-3 fw-bold text-success">S/. {{ liq.totalACobrar | number: '1.2-2' }}</span>
+                      </div>
+                      <p class="small text-muted text-md-end mb-3">
+                        Los montos son una estimación. El servidor recalcula el alojamiento al cerrar la estancia.
+                        Esta operación no cambia el estado de pago de los consumos.
+                      </p>
+                    } @else {
+                      <div class="alert alert-danger" role="alert">
+                        Los datos de la estancia (fechas o precio) no permiten calcular la liquidación.
+                        Revise la recepción antes de procesar la salida.
+                      </div>
+                    }
+
+                    <div class="text-md-end">
+                      <button
+                        type="button"
+                        class="btn btn-danger btn-lg px-5 shadow fw-bold"
+                        [disabled]="!puedeProcesar()"
+                        (click)="finalizarCheckOut()"
+                      >
+                        @if (procesando()) {
+                          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                          Procesando...
+                        } @else {
+                          <i class="fas fa-check-circle me-2" aria-hidden="true"></i>
+                          Procesar salida y liberar habitación
+                        }
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              }
+            }
           }
 
         </div>

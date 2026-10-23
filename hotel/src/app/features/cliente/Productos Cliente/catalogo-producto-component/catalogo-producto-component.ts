@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 
-import { ProductoService } from './../../../../core/services/producto.service';
+import { ProductoClienteService } from '../../../../core/services/productocliente';
 import { CarritoService } from '../../../../core/services/carritoservice';
 import { AuthService } from '../../../../core/services/auth.service';
 import { Producto } from '../../../../core/models/producto';
@@ -18,7 +18,7 @@ import { Producto } from '../../../../core/models/producto';
 })
 export class CatalogoProductoComponent implements OnInit, OnDestroy {
 
-  private readonly productoService = inject(ProductoService);
+  private readonly productoClienteService = inject(ProductoClienteService);
   private readonly carritoService = inject(CarritoService);
   private readonly authService = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -34,7 +34,6 @@ export class CatalogoProductoComponent implements OnInit, OnDestroy {
   private idRecepcion = 0;
 
   ngOnInit(): void {
-
     const state = history.state;
     this.idRecepcion = Number(state?.idRecepcion);
 
@@ -69,17 +68,19 @@ export class CatalogoProductoComponent implements OnInit, OnDestroy {
   }
 
   cargarProductos(): void {
-    this.productoService.listar().subscribe({
+    this.productoClienteService.obtenerCatalogo().subscribe({
       next: (res: any) => {
         this.productos = res?.data ?? res ?? [];
         this.cdr.markForCheck();
       },
-      error: (err) => console.error('Error al cargar productos:', err)
+      error: (err) => {
+        console.error('Error al cargar productos del catálogo:', err);
+        Swal.fire('Error', 'No se pudo cargar el catálogo de productos', 'error');
+      }
     });
   }
 
   agregarAlCarrito(producto: Producto): void {
-
     const idProducto = producto.idProducto;
     if (!idProducto) return;
 
@@ -93,39 +94,31 @@ export class CatalogoProductoComponent implements OnInit, OnDestroy {
       1
     ).subscribe({
       next: () => {
-
         this.productosAgregando.delete(idProducto);
-
         this.carritoService.actualizarCarrito(this.idRecepcion);
-
         Swal.fire('Éxito', 'Producto agregado al carrito', 'success');
-
         this.cdr.markForCheck();
       },
       error: (err) => {
-
         this.productosAgregando.delete(idProducto);
-
         const mensaje =
           err?.error?.message ||
-          err?.error ||
+          err?.message ||
           'No se pudo agregar al carrito';
-
         Swal.fire('Error', mensaje, 'error');
-
         this.cdr.markForCheck();
       }
     });
   }
 
-irAlCarrito(): void {
-  if (!this.idRecepcion) {
-    Swal.fire('Error', 'No hay habitación seleccionada.', 'error');
-    return;
-  }
+  irAlCarrito(): void {
+    if (!this.idRecepcion) {
+      Swal.fire('Error', 'No hay habitación seleccionada.', 'error');
+      return;
+    }
 
-  this.router.navigate(['/cliente/carrito', this.idRecepcion]);
-}
+    this.router.navigate(['/cliente/carrito', this.idRecepcion]);
+  }
 
   trackById(_: number, item: Producto): number {
     return item.idProducto ?? 0;

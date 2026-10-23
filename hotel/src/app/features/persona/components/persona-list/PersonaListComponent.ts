@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { PersonaService } from '../../../../core/services/persona.service';
-import { SedeService } from '../../../../core/services/SedeService'; // <-- Servicio de sedes integrado
+import { SedeService } from '../../../../core/services/SedeService';
 import { Persona } from '../../../../core/models/persona.model';
 import { Sede } from '../../../../core/models/Sede/Sede';
 
@@ -14,7 +14,6 @@ const ROLES: Record<number, { nombre: string }> = {
 };
 
 const COLOR_PRIMARIO = '#8A1E33';
-const COLOR_ERROR = '#B3261E';
 
 @Component({
   selector: 'app-persona-list',
@@ -56,8 +55,10 @@ export class PersonaListComponent implements OnInit {
 
   cargarPersonas(): void {
     this.service.listar().subscribe({
-      next: (personas) => {
-        this.personas.set(personas || []);
+      next: (res: any) => {
+        // Adaptado para manejar ApiResponse del backend (res.data o res directo)
+        const lista = res?.data ?? res ?? [];
+        this.personas.set(lista);
         if (this.currentPage() > this.totalPaginas() && this.totalPaginas() > 0) {
           this.currentPage.set(this.totalPaginas());
         }
@@ -73,8 +74,9 @@ export class PersonaListComponent implements OnInit {
 
   cargarSedes(): void {
     this.sedeService.listar().subscribe({
-      next: (sedes) => {
-        this.sedesDisponibles.set(sedes || []);
+      next: (res: any) => {
+        const lista = res?.data ?? res ?? [];
+        this.sedesDisponibles.set(lista);
       },
       error: (err) => {
         console.error('Error al cargar sedes:', err);
@@ -109,12 +111,14 @@ export class PersonaListComponent implements OnInit {
     this.isProcessing.set(true);
 
     const esEdicion = !!data.idPersona;
+
+    // Mapeo limpio asegurando que 'sedes' envíe los objetos requeridos por SedeDto
     const payload: Persona = {
       ...data,
       idTipoPersona: Number(data.idTipoPersona),
       clave: data.clave || (esEdicion ? '**********' : ''),
       fotoUrl: data.fotoUrl || '',
-      sedes: data.sedes || []
+      sedes: (data.sedes || []).map(s => ({ idSede: s.idSede, codigo: s.codigo, nombre: s.nombre }))
     };
 
     const operacion = esEdicion
@@ -134,7 +138,6 @@ export class PersonaListComponent implements OnInit {
         });
       },
       error: (err) => {
-        this.isProcessing.set(false);
         Swal.fire({
           title: 'Error',
           text: err?.error?.message || 'Error de validación',
@@ -146,13 +149,32 @@ export class PersonaListComponent implements OnInit {
     });
   }
 
+  // Agrega este método en tu clase PersonaListComponent
+onDocumentoInput(event: any): void {
+  const tipo = this.personaSeleccionada().tipoDocumento;
+  let valor = event.target.value.replace(/\D/g, ''); // Solo permite números
+
+  if (tipo === 'DNI') {
+    if (valor.length > 8) {
+      valor = valor.slice(0, 8); // Corta a 8 dígitos máximo si es DNI
+    }
+  } else {
+    if (valor.length > 15) {
+      valor = valor.slice(0, 15); // Máximo 15 para otros documentos
+    }
+  }
+
+  // Actualiza el Signal con el valor limpio y limitado
+  this.personaSeleccionada.update(p => ({ ...p, documento: valor }));
+}
+
   cambiarEstado(p: Persona): void {
     const payload: Persona = {
       ...p,
       estado: !p.estado,
       idTipoPersona: Number(p.idTipoPersona),
       clave: p.clave && p.clave.trim() !== '' ? p.clave : '**********',
-      sedes: p.sedes || []
+      sedes: (p.sedes || []).map(s => ({ idSede: s.idSede, codigo: s.codigo, nombre: s.nombre }))
     };
 
     this.service.actualizar(p.idPersona!, payload).subscribe({
@@ -170,7 +192,6 @@ export class PersonaListComponent implements OnInit {
   }
 
   eliminar(id: number | undefined): void {
-    // Nota: Mantenemos el método por compatibilidad interna, pero en la UI se usa bloquear/desbloquear con cambiarEstado
     if (!id) return;
   }
 
@@ -199,7 +220,7 @@ export class PersonaListComponent implements OnInit {
 
   private crearPersonaVacia(): Persona {
     return {
-      tipoDocumento: '',
+      tipoDocumento: 'DNI', // Valor por defecto sensato
       documento: '',
       nombre: '',
       apellido: '',

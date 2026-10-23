@@ -8,7 +8,6 @@ import { ApiResponse } from '../models/ApiResponse';
 export class RecepcionService {
   private readonly http = inject(HttpClient);
 
-
   private readonly baseUrl = '/gateway/recepcion-service/api/recepcion';
 
   /**
@@ -34,8 +33,8 @@ export class RecepcionService {
   }
 
   /** Procesa la salida (Check-out) y registra penalidades si aplica. */
-  registrarSalida(data: SalidaRequest): Observable<ApiResponse<RecepcionResponseDTO>> {
-    return this.http.post<ApiResponse<RecepcionResponseDTO>>(`${this.baseUrl}/registrar-salida`, data);
+  registrarSalida(id: number, request: SalidaRequest): Observable<ApiResponse<RecepcionResponseDTO>> {
+    return this.http.post<ApiResponse<RecepcionResponseDTO>>(`${this.baseUrl}/registrar-salida/${id}`, request);
   }
 
   /** Busca una recepción por su ID. */

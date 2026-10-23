@@ -41,16 +41,19 @@ export class ClienteHabitacionesDisponiblesComponent implements OnInit {
     this.isLoading.set(true);
 
     this.recepcionService.listarPorCliente(idPersona).subscribe({
-      next: (res) => {
-        this.habitacionesActivas.set(res.data ?? []);
+      next: (res: any) => {
+        // Se asegura de extraer la data ya sea que venga en res.data o directamente en res
+        const lista = res?.data ?? res ?? [];
+        this.habitacionesActivas.set(lista);
         this.isLoading.set(false);
 
-        if (!res.data || res.data.length === 0) {
+        if (!lista || lista.length === 0) {
           Swal.fire('Información', 'No tienes reservas activas.', 'info');
         }
       },
-      error: () => {
+      error: (err) => {
         this.isLoading.set(false);
+        console.error('Error al cargar habitaciones:', err);
         Swal.fire('Error', 'No se pudieron cargar tus reservas.', 'error');
       }
     });

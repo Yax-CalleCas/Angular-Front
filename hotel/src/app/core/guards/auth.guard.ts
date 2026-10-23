@@ -14,7 +14,9 @@ export const authGuard: CanActivateFn = (route, state) => {
     return true;
   }
 
+  // Sin token o con token vencido: limpiar y mandar al login
   if (!authService.isLoggedIn()) {
+    authService.logout();
     return router.createUrlTree(['/login']);
   }
 

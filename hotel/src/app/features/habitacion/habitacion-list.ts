@@ -1,6 +1,10 @@
-import { Component, OnInit, inject, signal, computed, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component, OnInit, DestroyRef, inject, signal, computed, ViewChild, ElementRef, NgZone
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { finalize, forkJoin } from 'rxjs';
 import Swal, { SweetAlertIcon } from 'sweetalert2';
 
@@ -10,9 +14,24 @@ import { CategoriaService } from '../../core/services/categoria.service';
 import { PisoService } from '../../core/services/piso.service';
 
 import { HabitacionRequestDTO, HabitacionResponseDTO } from '../../core/models/Habitacion';
-import { EstadoHabitacionResponseDTO } from '../../core/models/estado-habitacion.model';
+import { EstadoHabitacionResponseDTO } from '../../core/models/Habitacion';
 import { Categoria } from '../../core/models/categoria.model';
 import { Piso } from '../../core/models/piso';
+
+interface BootstrapModalInstance {
+  show(): void;
+  hide(): void;
+}
+
+interface BootstrapGlobal {
+  Modal: {
+    getOrCreateInstance(element: HTMLElement): BootstrapModalInstance;
+  };
+}
+
+interface WindowWithBootstrap extends Window {
+  bootstrap?: BootstrapGlobal;
+}
 
 const ERRORES_HTTP: Record<number, { titulo: string; texto: string; icono: SweetAlertIcon }> = {
   409: {
@@ -40,6 +59,8 @@ export class HabitacionListComponent implements OnInit {
   private readonly estadoService = inject(EstadoHabitacionService);
   private readonly categoriaService = inject(CategoriaService);
   private readonly pisoService = inject(PisoService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly ngZone = inject(NgZone);
 
   @ViewChild('modalHab') private modalElement!: ElementRef<HTMLElement>;
 
@@ -48,6 +69,8 @@ export class HabitacionListComponent implements OnInit {
   private readonly maxBytesOriginal = 10 * 1024 * 1024;
   private readonly maxLadoPx = 1280;
   private readonly calidadJpeg = 0.8;
+
+  private ultimaFirma = '';
 
   habitaciones = signal<HabitacionResponseDTO[]>([]);
   habitacionForm = signal<HabitacionRequestDTO>(this.nuevoModeloRequest());
@@ -87,6 +110,7 @@ export class HabitacionListComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarDatos();
+    this.iniciarSseTiempoReal();
   }
 
   cargarDatos(): void {
@@ -105,14 +129,44 @@ export class HabitacionListComponent implements OnInit {
           this.categorias.set(((c.data || []) as Categoria[]).filter(x => x.estado));
           this.pisos.set(((p.data || []) as Piso[]).filter(x => x.estado));
 
-          this.habitaciones.set(
-            (h.data || []).sort((a, b) => b.idHabitacion - a.idHabitacion)
-          );
-
-          this.paginaActual.update(pNum => Math.min(pNum, Math.max(1, this.totalPaginas())));
+          this.aplicarHabitaciones(h.data || []);
         },
-        error: err => this.mostrarError(err, 'No se pudieron cargar los datos')
+        error: (err: HttpErrorResponse) => this.mostrarError(err, 'No se pudieron cargar los datos')
       });
+  }
+
+  private iniciarSseTiempoReal(): void {
+    if (typeof window === 'undefined') return;
+
+    this.service.obtenerCambiosTiempoReal()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (habitacionModificada) => {
+          this.ngZone.run(() => {
+            this.habitaciones.update(listaActual => {
+              const index = listaActual.findIndex(h => h.idHabitacion === habitacionModificada.idHabitacion);
+              if (index !== -1) {
+                const nuevaLista = [...listaActual];
+                nuevaLista[index] = habitacionModificada;
+                return nuevaLista;
+              } else {
+                return [habitacionModificada, ...listaActual];
+              }
+            });
+          });
+        },
+        error: (err: unknown) => console.error('Error en el flujo SSE:', err)
+      });
+  }
+
+  private aplicarHabitaciones(lista: HabitacionResponseDTO[]): void {
+    const ordenada = [...lista].sort((a, b) => b.idHabitacion - a.idHabitacion);
+    const firma = JSON.stringify(ordenada);
+    if (firma === this.ultimaFirma) return;
+
+    this.ultimaFirma = firma;
+    this.habitaciones.set(ordenada);
+    this.paginaActual.update(p => Math.min(p, Math.max(1, this.totalPaginas())));
   }
 
   abrir(h?: HabitacionResponseDTO): void {
@@ -126,7 +180,7 @@ export class HabitacionListComponent implements OnInit {
         idEstadoHabitacion: h.estadoHabitacion?.idEstadoHabitacion,
         idPiso: h.piso?.idPiso,
         idCategoria: h.categoria?.idCategoria,
-        urlsImagenes: h.imagenes?.map(img => img.urlImagen) || []
+        urlsImagenes: h.imagenes?.map(img => img.urlImagen || '') || []
       });
     } else {
       this.idHabitacionEditando.set(null);
@@ -155,7 +209,7 @@ export class HabitacionListComponent implements OnInit {
           this.cerrarModal();
           this.operacionExitosa('Operación realizada correctamente');
         },
-        error: err => this.mostrarError(err, 'No se pudo guardar la información')
+        error: (err: HttpErrorResponse) => this.mostrarError(err, 'No se pudo guardar la información')
       });
   }
 
@@ -175,7 +229,7 @@ export class HabitacionListComponent implements OnInit {
 
       this.service.eliminar(h.idHabitacion).subscribe({
         next: () => this.operacionExitosa('Habitación dada de baja'),
-        error: err => this.manejarErrorOperacion(
+        error: (err: HttpErrorResponse) => this.manejarErrorOperacion(
           err,
           'Solicitud de baja recibida en estado PREPARANDO.',
           'No se pudo dar de baja la habitación'
@@ -256,7 +310,12 @@ export class HabitacionListComponent implements OnInit {
           const canvas = document.createElement('canvas');
           canvas.width = Math.round(img.width * escala);
           canvas.height = Math.round(img.height * escala);
-          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('No se pudo inicializar el contexto del canvas'));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
           resolve(canvas.toDataURL('image/jpeg', this.calidadJpeg));
         } catch (e) {
@@ -275,8 +334,13 @@ export class HabitacionListComponent implements OnInit {
     });
   }
 
-  private get modal(): { show(): void; hide(): void } {
-    return (window as any).bootstrap.Modal.getOrCreateInstance(this.modalElement.nativeElement);
+  private get modal(): BootstrapModalInstance {
+    const win = window as unknown as WindowWithBootstrap;
+    const modalModule = win.bootstrap?.Modal;
+    if (!modalModule) {
+      throw new Error('Bootstrap Modal no está disponible en el objeto global window.');
+    }
+    return modalModule.getOrCreateInstance(this.modalElement.nativeElement);
   }
 
   private operacionExitosa(mensaje: string): void {
@@ -284,8 +348,8 @@ export class HabitacionListComponent implements OnInit {
     this.cargarDatos();
   }
 
-  private manejarErrorOperacion(err: any, mensaje202: string, mensajePorDefecto: string): void {
-    if (err?.status === 202) {
+  private manejarErrorOperacion(err: HttpErrorResponse, mensaje202: string, mensajePorDefecto: string): void {
+    if (err.status === 202) {
       Swal.fire('En Proceso', mensaje202, 'info');
       this.cargarDatos();
     } else {
@@ -293,13 +357,14 @@ export class HabitacionListComponent implements OnInit {
     }
   }
 
-  private mostrarError(err: any, mensajePorDefecto: string): void {
-    const conocido = ERRORES_HTTP[err?.status];
+  private mostrarError(err: HttpErrorResponse, mensajePorDefecto: string): void {
+    const conocido = ERRORES_HTTP[err.status];
     if (conocido) {
       Swal.fire(conocido.titulo, conocido.texto, conocido.icono);
       return;
     }
-    const detalle = err?.error?.message ?? (typeof err?.error === 'string' ? err.error : null);
+    const errorBody = err.error as { message?: string } | string | null;
+    const detalle = typeof errorBody === 'object' && errorBody !== null ? errorBody.message : (typeof errorBody === 'string' ? errorBody : null);
     Swal.fire('Error', detalle || mensajePorDefecto, 'error');
   }
 

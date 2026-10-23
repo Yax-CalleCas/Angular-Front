@@ -1,6 +1,6 @@
 <div class="container-fluid py-4 font-ui hab-page">
 
-  <!-- ── Encabezado y botón de acción ── -->
+  <!-- Encabezado y boton de accion -->
   <header class="hab-header">
     <div class="hab-header__texto">
       <h2 class="hab-title font-display text-tinta">Gestión de Habitaciones</h2>
@@ -14,7 +14,7 @@
     </div>
   </header>
 
-  <!-- ── Tarjeta: filtro y tabla ── -->
+  <!-- Tarjeta: filtro y tabla -->
   <div class="card hab-card border border-junta bg-sillar-blanco">
     <div class="card-body hab-card__body">
 
@@ -59,24 +59,24 @@
               </tr>
             </thead>
             <tbody>
-              @for (h of habitacionesPaginadas(); track h.idHabitacion || h.numero) {
+            @for (h of habitacionesPaginadas(); track h.idHabitacion || h.numero) {
                 <tr>
                   <!-- Número -->
                   <td>
                     <span class="hab-placa font-mono text-tinta border border-junta">{{ h.numero }}</span>
                   </td>
 
-                  <!-- Categoría (objeto anidado) -->
+                  <!-- Categoría -->
                   <td>
                     <span class="hab-chip bg-sillar-piedra text-tinta border border-junta">
                       {{ h.categoria.descripcion || 'N/A' }}
                     </span>
                   </td>
 
-                  <!-- Piso (objeto anidado) -->
-                  <td class="text-garua">{{ h.piso?.descripcion || 'N/A' }}</td>
+                  <!-- Piso -->
+                  <td class="text-garua">{{ h.piso.descripcion || 'N/A' }}</td>
 
-                  <!-- Estado (objeto anidado estadoHabitacion) -->
+                  <!-- Estado -->
                   <td>
                     <span [class]="'hab-estado ' + getEstadoBadgeClass(h.estadoHabitacion.descripcion)">
                       <span class="hab-estado__punto" aria-hidden="true"></span>
@@ -89,7 +89,7 @@
                     <span class="hab-precio font-mono text-tinta"><span class="hab-moneda text-garua">S/</span> {{ h.precio | number:'1.2-2' }}</span>
                   </td>
 
-                  <!-- Fotos (lista de imágenes) -->
+                  <!-- Fotos -->
                   <td class="text-center">
                     <span class="hab-fotos text-garua font-mono">
                       <i class="bi bi-images" aria-hidden="true"></i>
@@ -126,7 +126,8 @@
                     </div>
                   </td>
                 </tr>
-              } @empty {
+              }
+              @empty {
                 <tr>
                   <td colspan="7" class="hab-empty text-garua">
                     <i class="bi bi-inbox text-muted" aria-hidden="true"></i>
@@ -168,7 +169,7 @@
   </div>
 </div>
 
-<!-- ───────────────────────── Modal Registrar / Editar ───────────────────────── -->
+<!-- Modal Registrar / Editar -->
 <div #modalHab class="modal fade hab-modal" id="modalHabitacion" tabindex="-1" aria-labelledby="modalHabitacionTitulo" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content border border-junta shadow-dialog bg-sillar-blanco">

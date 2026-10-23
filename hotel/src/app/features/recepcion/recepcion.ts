@@ -1,20 +1,37 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, inject, signal, computed, NgZone } from '@angular/core';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, NavigationEnd } from '@angular/router';
-import { forkJoin, Subscription, filter } from 'rxjs';
+import { Subscription, filter, forkJoin } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
+import Swal, { SweetAlertIcon } from 'sweetalert2';
 
 import { HabitacionService } from '../../core/services/habitacion.service';
 import { PisoService } from '../../core/services/piso.service';
 import { CategoriaService } from '../../core/services/categoria.service';
 import { EstadoHabitacionService } from '../../core/services/EstadoHabitacionService';
-import { HabitacionResponseDTO } from '../../core/models/Habitacion';
+import { HabitacionResponseDTO, EstadoHabitacionResponseDTO } from '../../core/models/Habitacion';
 import { Piso } from '../../core/models/piso';
+import { Categoria } from '../../core/models/categoria.model';
+
+const ERRORES_HTTP: Record<number, { titulo: string; texto: string; icono: SweetAlertIcon }> = {
+  409: {
+    titulo: 'Operación en progreso',
+    texto: 'La habitación tiene una operación en curso. Intenta nuevamente en unos minutos.',
+    icono: 'warning'
+  },
+  412: {
+    titulo: 'Conflicto de versión',
+    texto: 'La información cambió en el servidor. Por favor recargue la página.',
+    icono: 'error'
+  }
+};
 
 @Component({
   selector: 'app-recepcion',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DecimalPipe],
   templateUrl: './recepcion.html',
   styleUrls: ['./recepcion.css']
 })
@@ -24,6 +41,7 @@ export class RecepcionComponent implements OnInit, OnDestroy {
   private readonly pisoService = inject(PisoService);
   private readonly catService = inject(CategoriaService);
   private readonly estService = inject(EstadoHabitacionService);
+  private readonly ngZone = inject(NgZone);
 
   habitaciones = signal<HabitacionResponseDTO[]>([]);
   pisos = signal<Piso[]>([]);
@@ -33,34 +51,33 @@ export class RecepcionComponent implements OnInit, OnDestroy {
   private catsMap = new Map<number, string>();
   private estsMap = new Map<number, string>();
   private routerSubscription?: Subscription;
+  private ultimaFirma = '';
 
   habitacionesFiltradas = computed(() => {
     const pId = Number(this.idPisoSeleccionado());
     return pId === 0
       ? this.habitaciones()
       : this.habitaciones().filter(h => {
-          const pisoId = typeof h.piso === 'object' ? h.piso?.idPiso : Number(h.piso);
+          const pisoId = h.piso?.idPiso;
           return pisoId === pId;
         });
   });
 
   ngOnInit(): void {
     this.cargarDatos();
+    this.iniciarSseTiempoReal();
 
-    // 🔄 Detectar cuando el usuario regresa a esta ruta para refrescar la data automáticamente
     this.routerSubscription = this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd)
-    ).subscribe((event: any) => {
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd)
+    ).subscribe((event) => {
       if (event.url.includes('/admin/recepcion') && !event.url.includes('detalle')) {
-        this.refrescarDatosSilencioso();
+        this.actualizarAhora();
       }
     });
   }
 
   ngOnDestroy(): void {
-    if (this.routerSubscription) {
-      this.routerSubscription.unsubscribe();
-    }
+    this.routerSubscription?.unsubscribe();
   }
 
   cargarDatos(): void {
@@ -73,64 +90,84 @@ export class RecepcionComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: ({ pisos, habitaciones, categorias, estados }) => {
         this.pisos.set(pisos.data ?? []);
-
-        this.catsMap = new Map((categorias.data ?? []).map(c => [Number(c.idCategoria), c.descripcion]));
-        this.estsMap = new Map((estados.data ?? []).map(e => [Number(e.idEstadoHabitacion), e.descripcion]));
-
-        this.habitaciones.set(habitaciones.data ?? []);
+        this.catsMap = new Map(((categorias.data ?? []) as Categoria[]).map(c => [Number(c.idCategoria), c.descripcion]));
+        this.estsMap = new Map(((estados.data ?? []) as EstadoHabitacionResponseDTO[]).map(e => [Number(e.idEstadoHabitacion), e.descripcion]));
+        this.aplicarHabitaciones(habitaciones.data ?? []);
         this.isLoading.set(false);
       },
-      error: (err) => {
-        console.error('Error al cargar datos de recepción:', err);
+      error: (err: HttpErrorResponse) => {
+        this.mostrarError(err, 'Error al cargar datos de recepción');
         this.isLoading.set(false);
       }
     });
   }
 
-  getCatNombre(categoria: any): string {
-    if (!categoria) return 'N/A';
-    if (typeof categoria === 'object') {
-      return categoria.descripcion || 'N/A';
-    }
-    return this.catsMap.get(Number(categoria)) ?? 'N/A';
+  private iniciarSseTiempoReal(): void {
+    if (typeof window === 'undefined') return;
+
+    this.habService.obtenerCambiosTiempoReal()
+      .pipe(takeUntilDestroyed())
+      .subscribe({
+        next: (habitacionModificada) => {
+          this.ngZone.run(() => {
+            this.habitaciones.update(listaActual => {
+              const index = listaActual.findIndex(h => h.idHabitacion === habitacionModificada.idHabitacion);
+              if (index !== -1) {
+                const nuevaLista = [...listaActual];
+                nuevaLista[index] = habitacionModificada;
+                return nuevaLista;
+              } else {
+                return [habitacionModificada, ...listaActual];
+              }
+            });
+          });
+        },
+        error: (err: unknown) => console.error('Error en el flujo SSE de recepción:', err)
+      });
   }
 
-  getPisoNombre(piso: any): string {
+  actualizarAhora(): void {
+    this.habService.listar().subscribe({
+      next: (res) => this.aplicarHabitaciones(res.data ?? []),
+      error: (err: HttpErrorResponse) => this.mostrarError(err, 'Error al actualizar habitaciones')
+    });
+  }
+
+  private aplicarHabitaciones(lista: HabitacionResponseDTO[]): void {
+    const ordenada = [...lista].sort((a, b) => b.idHabitacion - a.idHabitacion);
+    const firma = JSON.stringify(ordenada);
+    if (firma === this.ultimaFirma) return;
+    this.ultimaFirma = firma;
+    this.habitaciones.set(ordenada);
+  }
+
+  getCatNombre(categoria: Categoria | null | undefined): string {
+    if (!categoria) return 'N/A';
+    return categoria.descripcion || 'N/A';
+  }
+
+  getPisoNombre(piso: Piso | null | undefined): string {
     if (!piso) return 'N/A';
-    if (typeof piso === 'object') {
-      return piso.descripcion || 'N/A';
-    }
-    return 'Piso ' + piso;
+    return piso.descripcion || 'Piso ' + piso.idPiso;
   }
 
   getEstNombre(habitacion: HabitacionResponseDTO): string {
     if (!habitacion || !habitacion.estadoHabitacion) return 'Disponible';
-    if (typeof habitacion.estadoHabitacion === 'object') {
-      return habitacion.estadoHabitacion.descripcion || 'Disponible';
-    }
-    return this.estsMap.get(Number(habitacion.estadoHabitacion)) ?? 'Disponible';
+    return habitacion.estadoHabitacion.descripcion || 'Disponible';
   }
 
   abrirDetalle(habitacion: HabitacionResponseDTO): void {
     this.router.navigate(['/admin/recepciondetalle', habitacion.idHabitacion]);
   }
 
-  refrescarDatos(): void {
-    this.habService.listar().subscribe({
-      next: (res) => {
-        this.habitaciones.set(res.data ?? []);
-      },
-      error: (err) => console.error('Error al refrescar habitaciones:', err)
-    });
-  }
-
-  // Refresco rápido y silencioso en segundo plano sin mostrar spinners pesados
-  private refrescarDatosSilencioso(): void {
-    this.habService.listar().subscribe({
-      next: (res) => {
-        this.habitaciones.set(res.data ?? []);
-      },
-      error: (err) => console.error('Error en actualización automática:', err)
-    });
+  private mostrarError(err: HttpErrorResponse, mensajePorDefecto: string): void {
+    const conocido = ERRORES_HTTP[err.status];
+    if (conocido) {
+      Swal.fire(conocido.titulo, conocido.texto, conocido.icono);
+      return;
+    }
+    const errorBody = err.error as { message?: string } | string | null;
+    const detalle = typeof errorBody === 'object' && errorBody !== null ? errorBody.message : (typeof errorBody === 'string' ? errorBody : null);
+    Swal.fire('Error', detalle || mensajePorDefecto, 'error');
   }
 }

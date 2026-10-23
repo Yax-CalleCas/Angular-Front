@@ -7,7 +7,7 @@ import Swal from 'sweetalert2';
 import { CategoriaService } from '../../core/services/categoria.service';
 import { EstadoHabitacionService } from '../../core/services/EstadoHabitacionService';
 import { Categoria } from '../../core/models/categoria.model';
-import { EstadoHabitacionResponseDTO } from '../../core/models/estado-habitacion.model';
+import { EstadoHabitacionResponseDTO } from '../../core/models/Habitacion';
 
 @Component({
   selector: 'app-categoria',
