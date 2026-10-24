@@ -1,0 +1,138 @@
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <!-- Encabezado -->
+      <div class="d-flex align-items-center mb-4">
+        <button type="button" class="btn btn-outline-secondary me-3" (click)="cancelar()">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <div>
+          <h2 class="fw-bold text-dark mb-0">
+            <i class="bi bi-person-plus-fill text-primary me-2"></i> Registrar Nuevo Cliente
+          </h2>
+          <small class="text-muted">Complete los datos personales para dar de alta a un cliente desde el panel administrativo.</small>
+        </div>
+      </div>
+
+      <!-- Formulario Card -->
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-4 p-md-5">
+
+          <form [formGroup]="registroForm" (ngSubmit)="onSubmit()" novalidate>
+            <div class="row g-3">
+
+              <!-- Tipo de Documento -->
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Tipo de Documento</label>
+                <select class="form-select" formControlName="tipoDocumento">
+                  <option value="DNI">DNI</option>
+                  <option value="Carnet de Extranjería">Carnet de Extranjería</option>
+                  <option value="Pasaporte">Pasaporte</option>
+                </select>
+              </div>
+
+              <!-- Número de Documento -->
+              <div class="col-md-8">
+                <label class="form-label fw-semibold">Nro. de Documento</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="documento"
+                  placeholder="Ej. 74829103"
+                  [class.is-invalid]="registroForm.get('documento')?.touched && registroForm.get('documento')?.invalid"
+                >
+                @if (registroForm.get('documento')?.touched && registroForm.get('documento')?.hasError('required')) {
+                  <div class="invalid-feedback">El número de documento es obligatorio.</div>
+                } @else if (registroForm.get('documento')?.hasError('pattern')) {
+                  <div class="invalid-feedback">Ingrese un documento válido (entre 8 y 12 dígitos numéricos).</div>
+                }
+              </div>
+
+              <!-- Nombres -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Nombres</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="nombre"
+                  placeholder="Ej. Juan Carlos"
+                  [class.is-invalid]="registroForm.get('nombre')?.touched && registroForm.get('nombre')?.invalid"
+                >
+                @if (registroForm.get('nombre')?.touched && registroForm.get('nombre')?.invalid) {
+                  <div class="invalid-feedback">Ingrese los nombres del cliente.</div>
+                }
+              </div>
+
+              <!-- Apellidos -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Apellidos</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="apellido"
+                  placeholder="Ej. Pérez Gómez"
+                  [class.is-invalid]="registroForm.get('apellido')?.touched && registroForm.get('apellido')?.invalid"
+                >
+                @if (registroForm.get('apellido')?.touched && registroForm.get('apellido')?.invalid) {
+                  <div class="invalid-feedback">Ingrese los apellidos del cliente.</div>
+                }
+              </div>
+
+              <!-- Correo Electrónico -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Correo Electrónico</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  formControlName="correo"
+                  placeholder="correo@ejemplo.com"
+                  [class.is-invalid]="registroForm.get('correo')?.touched && registroForm.get('correo')?.invalid"
+                >
+                @if (registroForm.get('correo')?.touched && registroForm.get('correo')?.hasError('required')) {
+                  <div class="invalid-feedback">El correo electrónico es obligatorio.</div>
+                } @else if (registroForm.get('correo')?.hasError('email')) {
+                  <div class="invalid-feedback">Ingrese un formato de correo válido.</div>
+                }
+              </div>
+
+              <!-- Contraseña Temporal -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Contraseña Temporal</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  formControlName="clave"
+                  placeholder="••••••••"
+                  [class.is-invalid]="registroForm.get('clave')?.touched && registroForm.get('clave')?.invalid"
+                >
+                @if (registroForm.get('clave')?.touched && registroForm.get('clave')?.invalid) {
+                  <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres.</div>
+                }
+              </div>
+
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="d-flex justify-content-end gap-2 mt-5">
+              <button type="button" class="btn btn-outline-secondary px-4" (click)="cancelar()">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary px-4" [disabled]="registroForm.invalid || isLoading">
+                @if (isLoading) {
+                  <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  Registrando...
+                } @else {
+                  <i class="bi bi-check-circle-fill me-2"></i> Guardar Cliente
+                }
+              </button>
+            </div>
+
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

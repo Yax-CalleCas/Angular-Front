@@ -23,7 +23,7 @@ export class AuthService {
   private readonly ID_KEY = 'user_id';
   private readonly SEDES_KEY = 'user_sedes';
 
-  login(credentials: LoginRequest): Observable<LoginResponse> {
+login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.API_AUTH_URL}/login`, credentials)
       .pipe(
         tap(response => {
@@ -31,6 +31,12 @@ export class AuthService {
             localStorage.setItem(this.TOKEN_KEY, response.token);
             localStorage.setItem(this.ROLE_KEY, response.tipoPersona);
             localStorage.setItem(this.ID_KEY, response.idPersona.toString());
+
+            // Guardamos el nombre y apellido que devuelve el backend
+            localStorage.setItem('user_nombre', response.nombre || '');
+            localStorage.setItem('user_apellido', response.apellido || '');
+            localStorage.setItem('user_documento', response.documento || '');
+
             if (response.sedes) {
               localStorage.setItem(this.SEDES_KEY, JSON.stringify(response.sedes));
             }
@@ -45,6 +51,9 @@ export class AuthService {
       localStorage.removeItem(this.ROLE_KEY);
       localStorage.removeItem(this.ID_KEY);
       localStorage.removeItem(this.SEDES_KEY);
+      localStorage.removeItem('user_nombre');
+      localStorage.removeItem('user_apellido');
+      localStorage.removeItem('user_documento');
     }
   }
 

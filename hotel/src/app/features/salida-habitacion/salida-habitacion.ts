@@ -1,9 +1,11 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import Swal from 'sweetalert2';
+import { finalize, forkJoin } from 'rxjs';
 
 import { HabitacionService } from '../../core/services/habitacion.service';
 import { PisoService } from '../../core/services/piso.service';
@@ -21,14 +23,15 @@ export class SalidaHabitacion implements OnInit {
   private readonly habService = inject(HabitacionService);
   private readonly router = inject(Router);
   private readonly pisoService = inject(PisoService);
+  private readonly destroyRef = inject(DestroyRef); // <-- Inyección del contexto de destrucción para evitar NG0203
 
-  // Signals utilizando la interfaz HabitacionResponseDTO
+  // Signals utilizando la interfaz HabitacionResponseDTO[cite: 14]
   habitaciones = signal<HabitacionResponseDTO[]>([]);
   pisos = signal<Piso[]>([]);
   idPisoSeleccionado = signal<number>(0);
   isLoading = signal<boolean>(false);
 
-  // Computado para filtrado reactivo utilizando la relación anidada .piso.idPiso
+  // Computado para filtrado reactivo utilizando la relación anidada .piso.idPiso[cite: 14]
   readonly habitacionesFiltradas = computed(() => {
     const pId = Number(this.idPisoSeleccionado());
     return pId === 0
@@ -38,39 +41,83 @@ export class SalidaHabitacion implements OnInit {
 
   ngOnInit(): void {
     this.cargarDatos();
+    this.iniciarSseTiempoReal();
   }
 
   private cargarDatos(): void {
     this.isLoading.set(true);
 
-    // Cargamos pisos y habitaciones de forma eficiente en paralelo
+    // Cargamos pisos y habitaciones en paralelo de manera eficiente con blindaje finalize
     forkJoin({
       pisos: this.pisoService.listar(),
       habitaciones: this.habService.listar()
-    }).subscribe({
-      next: ({ pisos, habitaciones }) => {
-        this.pisos.set(pisos.data ?? []);
-
-        // El estado ID 2 corresponde a las habitaciones OCUPADAS
-        const estadoOcupadoTarget = 2;
-
-        // Filtramos consultando el ID del objeto anidado estadoHabitacion
-        const listaOcupadas = (habitaciones.data ?? []).filter(h =>
-          Number(h.estadoHabitacion?.idEstadoHabitacion) === estadoOcupadoTarget && h.estado !== false
-        );
-
-        this.habitaciones.set(listaOcupadas);
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        this.isLoading.set(false);
-        if ([401, 403].includes(err.status)) {
-          this.manejarExpiracionSesion();
-        } else {
-          Swal.fire('Error', 'No se pudieron recuperar las habitaciones ocupadas.', 'error');
+    })
+      .pipe(finalize(() => this.isLoading.set(false))) // <-- Garantiza que el loader siempre se apague
+      .subscribe({
+        next: ({ pisos, habitaciones }) => {
+          this.pisos.set(pisos.data ?? []);
+          this.procesarHabitacionesOcupadas(habitaciones.data ?? []);
+        },
+        error: (err) => {
+          if ([401, 403].includes(err.status)) {
+            this.manejarExpiracionSesion();
+          } else {
+            Swal.fire('Error', 'No se pudieron recuperar las habitaciones ocupadas.', 'error');
+          }
         }
-      }
+      });
+  }
+  /**
+   * Filtra las habitaciones aplicando la regla de negocio del backend:
+   * Verifica si el código es 'OCUPADA' (o ID 2 como respaldo) y que la habitación esté activa.[cite: 14]
+   */
+  private procesarHabitacionesOcupadas(lista: HabitacionResponseDTO[]): void {
+    const listaOcupadas = lista.filter(h => {
+      const codigoEstado = h.estadoHabitacion?.codigo?.toUpperCase();
+      const idEstado = Number(h.estadoHabitacion?.idEstadoHabitacion);
+      const esOcupada = codigoEstado === 'OCUPADA' || idEstado === 2;
+      return esOcupada && h.estado !== false;
     });
+
+    this.habitaciones.set(listaOcupadas);
+  }
+
+  /**
+   * Sincronización en tiempo real vía SSE para reflejar check-outs o cambios de estado al instante.[cite: 14]
+   */
+  private iniciarSseTiempoReal(): void {
+    if (typeof window === 'undefined') return;
+
+    this.habService.obtenerCambiosTiempoReal()
+      .pipe(takeUntilDestroyed(this.destroyRef)) // <-- Se pasa el destroyRef explícitamente aquí
+      .subscribe({
+        next: (habitacionModificada) => {
+          this.habitaciones.update(listaActual => {
+            const codigoEstado = habitacionModificada.estadoHabitacion?.codigo?.toUpperCase();
+            const idEstado = Number(habitacionModificada.estadoHabitacion?.idEstadoHabitacion);
+            const sigueOcupada = (codigoEstado === 'OCUPADA' || idEstado === 2) && habitacionModificada.estado !== false;
+
+            const index = listaActual.findIndex(h => h.idHabitacion === habitacionModificada.idHabitacion);
+
+            if (sigueOcupada) {
+              if (index !== -1) {
+                const nuevaLista = [...listaActual];
+                nuevaLista[index] = habitacionModificada;
+                return nuevaLista;
+              } else {
+                return [habitacionModificada, ...listaActual];
+              }
+            } else {
+              // Si la habitación ya hizo check-out (cambió a limpieza/disponible), se elimina de la lista de salidas[cite: 14]
+              if (index !== -1) {
+                return listaActual.filter(h => h.idHabitacion !== habitacionModificada.idHabitacion);
+              }
+            }
+            return listaActual;
+          });
+        },
+        error: (err) => console.error('Error en el flujo SSE de SalidaHabitacion:', err)
+      });
   }
 
   trackByHabitacion(index: number, h: HabitacionResponseDTO): number {
@@ -79,7 +126,6 @@ export class SalidaHabitacion implements OnInit {
 
   procesarSalidaVenta(h: HabitacionResponseDTO): void {
     if (!h.idHabitacion) return;
-    // Navega al componente procesar salida pasando el ID de la habitación
     this.router.navigate(['/admin/procesarsalida', h.idHabitacion]);
   }
 

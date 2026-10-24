@@ -44,11 +44,11 @@
       <div class="card shadow border-0 h-100">
 
         <!-- Extracción segura de la primera URL de imagen del DTO -->
-<img
-  [src]="habitacion.imagenes[0]?.urlImagen ?? 'assets/img/default-room.jpg'"
-  class="card-img-top object-fit-cover"
-  style="height: 200px;"
-  alt="Habitación">
+        <img
+          [src]="habitacion.imagenes[0]?.urlImagen ?? 'assets/img/default-room.jpg'"
+          class="card-img-top object-fit-cover"
+          style="height: 200px;"
+          alt="Habitación">
 
         <div class="card-body">
 
@@ -58,7 +58,7 @@
 
           <!-- Categoría anidada -->
           <span class="badge bg-primary mb-3">
-            {{ habitacion.categoria?.descripcion || 'N/A' }}
+            {{ habitacion.categoria.descripcion || 'N/A' }}
           </span>
 
           <p class="text-muted small">
@@ -70,21 +70,21 @@
           <!-- Piso anidado -->
           <p>
             <strong>Piso:</strong>
-            {{ habitacion.piso?.descripcion || 'N/A' }}
+            {{ habitacion.piso.descripcion || 'N/A' }}
           </p>
 
           <!-- Estado de habitación anidado -->
           <p>
             <strong>Estado:</strong>
 
-       <span
-  class="badge"
-  [class.bg-success]="habitacion.estadoHabitacion.descripcion === 'Disponible'"
-  [class.bg-danger]="habitacion.estadoHabitacion.descripcion !== 'Disponible'">
+            <span
+              class="badge"
+              [class.bg-success]="habitacion.estadoHabitacion.descripcion === 'Disponible'"
+              [class.bg-danger]="habitacion.estadoHabitacion.descripcion !== 'Disponible'">
 
-  {{ habitacion.estadoHabitacion.descripcion || 'N/A' }}
+              {{ habitacion.estadoHabitacion.descripcion || 'N/A' }}
 
-</span>
+            </span>
           </p>
 
           <hr>
@@ -124,12 +124,12 @@
             <div class="col-md-6 mb-3">
 
               <label class="form-label">
-                Cliente
+                Cliente (ID / Nombre / DNI)
               </label>
 
               <input
                 type="text"
-                class="form-control"
+                class="form-control fw-semibold text-secondary"
                 formControlName="clienteNombre"
                 readonly>
 

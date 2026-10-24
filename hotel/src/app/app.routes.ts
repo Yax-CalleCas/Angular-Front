@@ -82,6 +82,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/producto/ventaproductos/ventaproductos').then(m => m.Ventaproductos)
       },
       {
+        path: 'registrocliente',
+        loadComponent: () => import('./features/registropublico/registroclientes/registroclientes').then(m => m.RegistroClienteAdminComponent)
+      },
+      {
         path: 'crudproductos',
         loadComponent: () => import('./features/producto/productocomponent').then(m => m.ProductoComponent)
       }
@@ -129,6 +133,11 @@ export const routes: Routes = [
       path: 'catalogo',
       loadComponent: () => import('./features/cliente/Productos Cliente/catalogo-producto-component/catalogo-producto-component').then(m => m.CatalogoProductoComponent)
     },
+
+{
+  path: 'clientehistorial',
+  loadComponent: () => import('./features/cliente/clienteHitorial/cliente-historial/cliente-historial').then(m => m.ClienteHistorialHabitacionesComponent)
+},
     {
       path: 'carrito/:id',
       loadComponent: () => import('./features/cliente/Productos Cliente/catalogo-producto-component/Carrito/carrito-detalle/carrito-detalle').then(m => m.CarritoDetalle)

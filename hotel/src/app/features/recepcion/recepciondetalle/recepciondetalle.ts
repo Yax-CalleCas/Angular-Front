@@ -1,8 +1,10 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { Subscription, finalize, forkJoin, switchMap, tap, timeout } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { HabitacionService } from '../../../core/services/habitacion.service';
@@ -16,7 +18,25 @@ import { Persona } from '../../../core/models/persona.model';
 import { RecepcionResponseDTO, RecepcionRequestDTO } from '../../../core/models/recepcion.model';
 
 const ID_TIPO_PERSONA_CLIENTE = 3;
+const ID_ESTADO_OCUPADO = 2;
+const ID_ESTADO_MANTENIMIENTO = 3;
 const MS_POR_DIA = 1000 * 60 * 60 * 24;
+const TIMEOUT_CARGA_MS = 30000;
+
+interface BootstrapModalInstance {
+  show(): void;
+  hide(): void;
+}
+
+interface BootstrapGlobal {
+  Modal: {
+    getOrCreateInstance(element: HTMLElement): BootstrapModalInstance;
+    getInstance(element: HTMLElement): BootstrapModalInstance | null;
+  };
+}
+
+const bootstrapGlobal = (): BootstrapGlobal | undefined =>
+  (window as unknown as { bootstrap?: BootstrapGlobal }).bootstrap;
 
 @Component({
   selector: 'app-recepciondetalle',
@@ -27,12 +47,16 @@ const MS_POR_DIA = 1000 * 60 * 60 * 24;
 export class RecepcionDetalleComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly habService = inject(HabitacionService);
   private readonly recService = inject(RecepcionService);
   private readonly personaService = inject(PersonaService);
   private readonly catService = inject(CategoriaService);
   private readonly pisoService = inject(PisoService);
   private readonly estService = inject(EstadoHabitacionService);
+
+  private habitacionSub?: Subscription;
+  private recepcionActivaSub?: Subscription;
 
   habitacion = signal<HabitacionResponseDTO | null>(null);
   recepcion = signal<RecepcionResponseDTO>(this.inicializarModelo());
@@ -43,6 +67,7 @@ export class RecepcionDetalleComponent implements OnInit {
   catMap = signal<Map<number, string>>(new Map());
   pisoMap = signal<Map<number, string>>(new Map());
   estMap = signal<Map<number, string>>(new Map());
+  catalogosListos = signal(false);
 
   noches = signal<number>(1);
   dniBusqueda = signal('');
@@ -52,18 +77,18 @@ export class RecepcionDetalleComponent implements OnInit {
   esOcupada = computed(() => {
     const hab = this.habitacion();
     if (!hab || !hab.estadoHabitacion) return false;
-    const estId = typeof hab.estadoHabitacion === 'object' ? (hab.estadoHabitacion as any).idEstadoHabitacion : Number(hab.estadoHabitacion);
+    const estId = this.extraerId(hab.estadoHabitacion, 'idEstadoHabitacion');
     const nombreEstado = (this.estMap().get(estId) || '').toLowerCase();
-    return estId === 2 || nombreEstado.includes('ocupado');
+    return estId === ID_ESTADO_OCUPADO || nombreEstado.includes('ocupado');
   });
 
   // Validación de estado Mantenimiento
   esMantenimiento = computed(() => {
     const hab = this.habitacion();
     if (!hab || !hab.estadoHabitacion) return false;
-    const estId = typeof hab.estadoHabitacion === 'object' ? (hab.estadoHabitacion as any).idEstadoHabitacion : Number(hab.estadoHabitacion);
+    const estId = this.extraerId(hab.estadoHabitacion, 'idEstadoHabitacion');
     const nombreEstado = (this.estMap().get(estId) || '').toLowerCase();
-    return estId === 3 || nombreEstado.includes('mantenimiento') || nombreEstado.includes('limpieza');
+    return estId === ID_ESTADO_MANTENIMIENTO || nombreEstado.includes('mantenimiento') || nombreEstado.includes('limpieza');
   });
 
   private readonly clientesActivos = computed(() =>
@@ -79,7 +104,7 @@ export class RecepcionDetalleComponent implements OnInit {
     Math.ceil(this.clientesActivos().length / this.itemsPorPagina)
   );
 
-  // Computado para obtener los datos del cliente seleccionado o del ocupante actual
+  // Datos del cliente seleccionado o del ocupante actual
   cliente = computed(() => {
     const idCliente = this.recepcion().idCliente;
     if (!idCliente) return null;
@@ -87,12 +112,40 @@ export class RecepcionDetalleComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.cargarCatalogos();
-    this.cargarClientes();
-    this.route.paramMap.subscribe(params => {
-      const id = Number(params.get('id'));
-      if (id) this.cargarDatosHabitacion(id);
-    });
+    // Primero catálogos y clientes; luego se lee la ruta (y se reacciona a cambios de :id)
+    // dentro de la misma cadena, para que todo se cancele al salir de la pantalla.
+    forkJoin({
+      cats: this.catService.listar(),
+      pisos: this.pisoService.listar(),
+      estados: this.estService.listar(),
+      personas: this.personaService.listar()
+    })
+      .pipe(
+        timeout(TIMEOUT_CARGA_MS),
+        tap(({ cats, pisos, estados, personas }) => {
+          this.catMap.set(new Map((cats.data ?? []).map(c => [Number(c.idCategoria), c.descripcion])));
+          this.pisoMap.set(new Map((pisos.data ?? []).map(p => [Number(p.idPiso), p.descripcion])));
+          this.estMap.set(new Map((estados.data ?? []).map(e => [Number(e.idEstadoHabitacion), e.descripcion])));
+
+          const clientes = (personas ?? []).filter(
+            (p: Persona) => Number(p.idTipoPersona) === ID_TIPO_PERSONA_CLIENTE && p.estado === true
+          );
+          this.listaPersonas.set(clientes);
+          this.catalogosListos.set(true);
+        }),
+        switchMap(() => this.route.paramMap),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: params => {
+          const id = Number(params.get('id'));
+          if (id) this.cargarDatosHabitacion(id);
+        },
+        error: (err: unknown) => {
+          console.error('Error al cargar catálogos iniciales:', err);
+          Swal.fire('Error', 'No se pudieron cargar los catálogos del sistema', 'error');
+        }
+      });
   }
 
   private inicializarModelo(): RecepcionResponseDTO {
@@ -117,8 +170,7 @@ export class RecepcionDetalleComponent implements OnInit {
   }
 
   private hoyLocal(): string {
-    const d = new Date();
-    return this.formatearFecha(d);
+    return this.formatearFecha(new Date());
   }
 
   private sumarDiasLocal(fecha: Date, dias: number): string {
@@ -137,6 +189,14 @@ export class RecepcionDetalleComponent implements OnInit {
     return String(valor ?? '').substring(0, 10);
   }
 
+  /** El campo puede venir como objeto anidado ({ idX: 1 }) o como id plano. */
+  private extraerId(valor: unknown, campo: string): number {
+    if (valor && typeof valor === 'object') {
+      return Number((valor as Record<string, unknown>)[campo]) || 0;
+    }
+    return Number(valor) || 0;
+  }
+
   private calcularNoches(): number {
     const r = this.recepcion();
     const entrada = new Date(this.soloFecha(r.fechaEntrada)).getTime();
@@ -151,10 +211,11 @@ export class RecepcionDetalleComponent implements OnInit {
   }
 
   abrirModalClientes(): void {
-    if (this.esOcupada() || this.esMantenimiento()) return; // Bloquear si está ocupada o mantenimiento
+    if (this.esOcupada() || this.esMantenimiento()) return;
     const modalElement = document.getElementById('modalClientes');
-    if (modalElement) {
-      (window as any).bootstrap.Modal.getOrCreateInstance(modalElement).show();
+    const bootstrap = bootstrapGlobal();
+    if (modalElement && bootstrap) {
+      bootstrap.Modal.getOrCreateInstance(modalElement).show();
     }
   }
 
@@ -162,75 +223,64 @@ export class RecepcionDetalleComponent implements OnInit {
     (document.activeElement as HTMLElement | null)?.blur();
     const modalElement = document.getElementById('modalClientes');
     if (modalElement) {
-      (window as any).bootstrap?.Modal.getInstance(modalElement)?.hide();
+      bootstrapGlobal()?.Modal.getInstance(modalElement)?.hide();
     }
   }
 
   cargarDatosHabitacion(idHabitacion: number): void {
-    this.habService.buscarPorId(idHabitacion).subscribe({
-      next: res => {
-        const hab = res.data;
-        if (!hab) return;
-        this.habitacion.set(hab);
+    this.habitacionSub?.unsubscribe();
+    this.recepcionActivaSub?.unsubscribe();
 
-        if (this.esMantenimiento()) {
-          Swal.fire('Acceso Restringido', 'La habitación se encuentra en mantenimiento y no permite operaciones.', 'error')
-            .then(() => this.router.navigate(['/admin/recepcion']));
-          return;
+    this.habitacionSub = this.habService.buscarPorId(idHabitacion)
+      .pipe(
+        timeout(TIMEOUT_CARGA_MS),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: res => {
+          const hab = res.data;
+          if (!hab) {
+            Swal.fire('Error', 'No se encontró la habitación solicitada', 'error')
+              .then(() => this.router.navigate(['/admin/recepcion']));
+            return;
+          }
+          this.habitacion.set(hab);
+
+          if (this.esMantenimiento()) {
+            Swal.fire('Acceso Restringido', 'La habitación se encuentra en mantenimiento y no permite operaciones.', 'error')
+              .then(() => this.router.navigate(['/admin/recepcion']));
+            return;
+          }
+
+          if (this.esOcupada()) {
+            this.recepcionActivaSub = this.recService.buscarActivaPorHabitacion(idHabitacion)
+              .pipe(
+                timeout(TIMEOUT_CARGA_MS),
+                takeUntilDestroyed(this.destroyRef)
+              )
+              .subscribe({
+                next: recRes => {
+                  const recData = recRes.data;
+                  if (recData) {
+                    this.recepcion.set(recData);
+                  }
+                },
+                error: () => console.warn('No se pudo recuperar el detalle de la recepción activa.')
+              });
+          } else {
+            this.recepcion.update(r => ({ ...r, idHabitacion, precioInicial: hab.precio }));
+            this.calcularTotal();
+          }
+        },
+        error: (err: unknown) => {
+          console.error('Error al cargar la habitación:', err);
+          Swal.fire('Error', 'No se pudo cargar la información de la habitación', 'error');
         }
-
-        // Si está ocupada, cargamos automáticamente los datos de la recepción activa para mostrárselos al administrador
-        if (this.esOcupada()) {
-          this.recService.buscarActivaPorHabitacion(idHabitacion).subscribe({
-            next: recRes => {
-              const recData = recRes.data;
-              if (recData) {
-                this.recepcion.set(recData);
-              }
-            },
-            error: () => console.warn('No se pudo recuperar el detalle de la recepción activa.')
-          });
-        } else {
-          this.recepcion.update(r => ({ ...r, idHabitacion, precioInicial: hab.precio }));
-          this.calcularTotal();
-        }
-      },
-      error: err => {
-        console.error('Error al cargar la habitación:', err);
-        Swal.fire('Error', 'No se pudo cargar la información de la habitación', 'error');
-      }
-    });
-  }
-
-  private cargarCatalogos(): void {
-    forkJoin({
-      cats: this.catService.listar(),
-      pisos: this.pisoService.listar(),
-      estados: this.estService.listar()
-    }).subscribe(({ cats, pisos, estados }) => {
-      this.catMap.set(new Map((cats.data ?? []).map(c => [Number(c.idCategoria), c.descripcion])));
-      this.pisoMap.set(new Map((pisos.data ?? []).map(p => [Number(p.idPiso), p.descripcion])));
-      this.estMap.set(new Map((estados.data ?? []).map(e => [Number(e.idEstadoHabitacion), e.descripcion])));
-    });
-  }
-
-  private cargarClientes(): void {
-    this.personaService.listar().subscribe({
-      next: (personas: Persona[]) => {
-        const clientes = (personas ?? []).filter(
-          (p: Persona) => Number(p.idTipoPersona) === ID_TIPO_PERSONA_CLIENTE && p.estado === true
-        );
-        this.listaPersonas.set(clientes);
-      },
-      error: err => {
-        console.error('Error al cargar clientes:', err);
-        Swal.fire('Error', 'No se pudieron cargar los clientes activos', 'error');
-      }
-    });
+      });
   }
 
   calcularTotal(): void {
-    if (this.esOcupada()) return; // No calcular si es solo lectura
+    if (this.esOcupada()) return;
 
     const hab = this.habitacion();
     if (!hab) return;
@@ -283,24 +333,26 @@ export class RecepcionDetalleComponent implements OnInit {
     };
 
     this.guardando.set(true);
-    this.recService.registrar(payload).subscribe({
-      next: () => {
-        this.guardando.set(false);
-        Swal.fire('Éxito', 'Check-in (Recepción) registrado correctamente', 'success');
-        this.router.navigate(['/admin/recepcion']);
-      },
-      error: err => {
-        this.guardando.set(false);
-        Swal.fire('Error', err.error?.message ?? 'Error al registrar la recepción', 'error');
-      }
-    });
+    // No se cancela al destruir el componente: un registro en curso debe terminar.
+    this.recService.registrar(payload)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: () => {
+          Swal.fire('Éxito', 'Check-in (Recepción) registrado correctamente', 'success');
+          this.router.navigate(['/admin/recepcion']);
+        },
+        error: (err: unknown) => {
+          Swal.fire('Error', this.mensajeError(err, 'Error al registrar la recepción'), 'error');
+        }
+      });
   }
 
   seleccionarPersona(c: Persona): void {
-    if (this.esOcupada()) return;
+    if (this.esOcupada() || c.idPersona == null) return;
+    const idPersona = c.idPersona;
     this.recepcion.update(r => ({
       ...r,
-      idCliente: c.idPersona!
+      idCliente: idPersona
     }));
     this.cerrarModalClientes();
   }
@@ -318,23 +370,21 @@ export class RecepcionDetalleComponent implements OnInit {
   }
 
   getCatNombre(id: number): string {
-    return this.catMap().get(Number(id)) ?? 'Cargando...';
+    return this.catMap().get(Number(id)) ?? (this.catalogosListos() ? 'N/D' : 'Cargando...');
   }
 
   getPisoNombre(id: number): string {
-    return this.pisoMap().get(Number(id)) ?? 'Cargando...';
+    return this.pisoMap().get(Number(id)) ?? (this.catalogosListos() ? 'N/D' : 'Cargando...');
   }
 
   getHabitacionCategoriaId(): number {
     const hab = this.habitacion();
-    if (!hab) return 0;
-    return typeof hab.categoria === 'object' ? (hab.categoria as any)?.idCategoria : Number(hab.categoria || 0);
+    return hab ? this.extraerId(hab.categoria, 'idCategoria') : 0;
   }
 
   getHabitacionPisoId(): number {
     const hab = this.habitacion();
-    if (!hab) return 0;
-    return typeof hab.piso === 'object' ? (hab.piso as any)?.idPiso : Number(hab.piso || 0);
+    return hab ? this.extraerId(hab.piso, 'idPiso') : 0;
   }
 
   actualizarAdelanto(valor: unknown): void {
@@ -342,5 +392,13 @@ export class RecepcionDetalleComponent implements OnInit {
     const adelanto = Number(valor) || 0;
     this.recepcion.update(r => ({ ...r, adelanto }));
     this.calcularTotal();
+  }
+
+  private mensajeError(err: unknown, porDefecto: string): string {
+    if (err instanceof HttpErrorResponse) {
+      const body = err.error as { message?: string } | string | null;
+      if (body && typeof body === 'object' && body.message) return body.message;
+    }
+    return porDefecto;
   }
 }

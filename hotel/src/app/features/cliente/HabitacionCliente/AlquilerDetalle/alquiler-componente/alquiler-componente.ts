@@ -1,5 +1,7 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   FormBuilder,
@@ -7,14 +9,28 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
+import { finalize, timeout } from 'rxjs';
+import Swal from 'sweetalert2';
 
 import { HabitacionService } from '../../../../../core/services/habitacion.service';
-import { PersonaService } from '../../../../../core/services/persona.service';
 import { RecepcionService } from '../../../../../core/services/recepcion.service';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 import { HabitacionResponseDTO } from '../../../../../core/models/Habitacion';
 import { Persona } from '../../../../../core/models/persona.model';
-import { RecepcionRequestDTO } from '../../../../../core/models/recepcion.model'; // CORREGIDO: Usar Request DTO
+import { RecepcionRequestDTO } from '../../../../../core/models/recepcion.model';
+import { ApiResponse } from '../../../../../core/models/ApiResponse';
+
+const TIMEOUT_CARGA_MS = 30000;
+const MS_POR_DIA = 1000 * 60 * 60 * 24;
+
+/** Fecha de hoy en hora local (YYYY-MM-DD). */
+function hoyLocal(): string {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
 
 @Component({
   selector: 'app-alquiler-componente',
@@ -28,10 +44,11 @@ export class AlquilerComponente implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly habitacionService = inject(HabitacionService);
-  private readonly personaService = inject(PersonaService);
   private readonly recepcionService = inject(RecepcionService);
+  private readonly authService = inject(AuthService);
 
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -44,23 +61,11 @@ export class AlquilerComponente implements OnInit {
 
   alquilerForm: FormGroup = this.fb.group({
     fechaIngreso: [
-      { value: new Date().toISOString().substring(0, 10), disabled: true }
+      { value: hoyLocal(), disabled: true }
     ],
-
-    fechaSalida: [
-      null,
-      Validators.required
-    ],
-
-    clienteNombre: [
-      { value: '', disabled: true }
-    ],
-
-    montoPagado: [
-      0,
-      [Validators.required, Validators.min(1)]
-    ],
-
+    fechaSalida: [null, Validators.required],
+    clienteNombre: [{ value: '', disabled: true }],
+    montoPagado: [0, [Validators.required, Validators.min(1)]],
     observaciones: ['']
   });
 
@@ -69,53 +74,85 @@ export class AlquilerComponente implements OnInit {
 
     if (idHabitacion) {
       this.cargarHabitacion(idHabitacion);
+    } else {
+      this.cargando = false;
     }
 
-    this.cargarCliente();
+    this.cargarClienteAutenticado();
   }
 
-  cargarHabitacion(id: number): void {
-    this.habitacionService.buscarPorId(id).subscribe({
-      next: (res: any) => {
-        this.habitacion = res.data ?? res;
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error(err);
-        this.cargando = false;
-      }
-    });
-  }
-
-  cargarCliente(): void {
-    this.personaService.listar().subscribe({
-      next: (personas) => {
-        const cliente = personas.find(p => p.idTipoPersona === 3);
-
-        if (!cliente) {
-          console.error('Cliente no encontrado.');
-          return;
+  private cargarHabitacion(id: number): void {
+    this.habitacionService.buscarPorId(id)
+      .pipe(
+        timeout(TIMEOUT_CARGA_MS),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.cargando = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: (res: ApiResponse<HabitacionResponseDTO>) => {
+          this.habitacion = res.data ?? null;
+        },
+        error: (err: unknown) => {
+          console.error('Error al cargar la habitación:', err);
+          Swal.fire('Error', 'No se pudo cargar la información de la habitación.', 'error');
         }
+      });
+  }
 
-        this.persona = cliente;
+  private cargarClienteAutenticado(): void {
+    const idPersonaString = this.authService.getUserId();
+    const idPersona = idPersonaString ? Number(idPersonaString) : NaN;
 
-        this.alquilerForm.patchValue({
-          clienteNombre: `${cliente.nombre} ${cliente.apellido}`
-        });
+    if (!Number.isFinite(idPersona) || idPersona <= 0) {
+      Swal.fire('Error', 'No se pudo identificar la sesión del usuario.', 'error');
+      this.router.navigate(['/login']);
+      return;
+    }
 
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error(err);
-      }
+    // Leemos los datos completos (nombre, apellido y documento) guardados en el localStorage tras el login
+    const nombre = localStorage.getItem('user_nombre') || 'Cliente';
+    const apellido = localStorage.getItem('user_apellido') || '';
+    const documento = localStorage.getItem('user_documento') || 'S/D';
+    const nombreCompleto = `${nombre} ${apellido}`.trim();
+
+    this.persona = {
+      idPersona: idPersona,
+      nombre: nombre,
+      apellido: apellido,
+      tipoDocumento: 'DNI',
+      documento: documento,
+      correo: '',
+      idTipoPersona: 3
+    };
+
+    // Pintamos en el input del formulario el ID, Nombre y DNI de forma limpia
+    this.alquilerForm.patchValue({
+      clienteNombre: `ID: ${idPersona} | ${nombreCompleto} | DNI: ${documento}`
     });
+
+    this.cdr.markForCheck();
   }
 
   confirmarAlquiler(): void {
     if (this.alquilerForm.invalid) {
+      this.alquilerForm.markAllAsTouched();
       return;
     }
+
+    if (this.calcularNoches < 1) {
+      Swal.fire('Fechas inválidas', 'La fecha de salida debe ser posterior a la de ingreso.', 'warning');
+      return;
+    }
+
+    const monto = Number(this.alquilerForm.get('montoPagado')?.value) || 0;
+    if (monto > this.precioTotalCalculado) {
+      Swal.fire('Monto inválido', 'El monto a pagar no puede superar el total de la reserva.', 'warning');
+      return;
+    }
+
     this.mostrarModalPago = true;
   }
 
@@ -131,7 +168,9 @@ export class AlquilerComponente implements OnInit {
     const salida = new Date(fechaSalida);
 
     const diferencia = salida.getTime() - ingreso.getTime();
-    const noches = Math.ceil(diferencia / (1000 * 60 * 60 * 24));
+    if (Number.isNaN(diferencia)) return 0;
+
+    const noches = Math.ceil(diferencia / MS_POR_DIA);
 
     return noches > 0 ? noches : 0;
   }
@@ -141,7 +180,9 @@ export class AlquilerComponente implements OnInit {
   }
 
   procesarPagoFinal(): void {
-    if (!this.habitacion || !this.persona) {
+    if (this.procesando) return;
+    if (!this.habitacion || !this.persona?.idPersona || !this.habitacion.idHabitacion) {
+      Swal.fire('Error', 'Faltan datos de la habitación o del cliente para registrar la reserva.', 'error');
       return;
     }
 
@@ -149,30 +190,43 @@ export class AlquilerComponente implements OnInit {
 
     const montoIngresado = Number(this.alquilerForm.get('montoPagado')?.value) || 0;
     const total = this.precioTotalCalculado;
+    const observacion = String(this.alquilerForm.get('observaciones')?.value ?? '').trim();
 
-    // CORREGIDO: Se ajusta estrictamente a RecepcionRequestDTO que espera el backend al registrar
     const dto: RecepcionRequestDTO = {
-      idCliente: this.persona.idPersona ?? 0,
-      idHabitacion: this.habitacion.idHabitacion ?? 0,
+      idCliente: this.persona.idPersona,
+      idHabitacion: this.habitacion.idHabitacion,
       fechaEntrada: this.alquilerForm.getRawValue().fechaIngreso ?? '',
       fechaSalida: this.alquilerForm.get('fechaSalida')?.value ?? '',
-      precioInicial: total ?? 0,
-      adelanto: montoIngresado, // Adelanto o monto pagado inicial enviado al registrar
-      observacion: this.alquilerForm.get('observaciones')?.value ?? ''
+      precioInicial: total,
+      adelanto: montoIngresado,
+      observacion: observacion || undefined
     };
 
-    this.recepcionService.registrar(dto).subscribe({
-      next: () => {
-        this.procesando = false;
-        this.mostrarModalPago = false;
-        alert('Reserva registrada correctamente.');
-        this.router.navigate(['/cliente/catalogo']);
-      },
-      error: (err) => {
-        console.error(err);
-        this.procesando = false;
-      }
-    });
+    this.recepcionService.registrar(dto)
+      .pipe(
+        finalize(() => {
+          this.procesando = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.mostrarModalPago = false;
+          Swal.fire('¡Éxito!', 'Reserva registrada correctamente.', 'success');
+          this.router.navigate(['/cliente/habitacionesocupadasCliente']);
+        },
+        error: (err: unknown) => {
+          console.error('Error al registrar la recepción:', err);
+          Swal.fire('Error', this.mensajeError(err, 'No se pudo procesar tu reserva. Inténtalo nuevamente.'), 'error');
+        }
+      });
   }
 
+  private mensajeError(err: unknown, porDefecto: string): string {
+    if (err instanceof HttpErrorResponse) {
+      const body = err.error as { message?: string } | string | null;
+      if (body && typeof body === 'object' && body.message) return body.message;
+    }
+    return porDefecto;
+  }
 }

@@ -41,7 +41,9 @@
       @if (hasRole('Cliente')) {
         <div class="nav-section">Mi cuenta</div>
         <a routerLink="/cliente" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link"><i class="bi bi-person-circle"></i> Mi Perfil</a>
-        <a routerLink="/cliente/catalogo" routerLinkActive="active" class="nav-link"><i class="bi bi-box-seam"></i> Mi Catálogo</a>
+
+
+         <a routerLink="/cliente/clientehistorial" routerLinkActive="active" class="nav-link"><i class="bi bi-building"></i> Historial Hab</a>
         <a routerLink="/cliente/habitacioncliente" routerLinkActive="active" class="nav-link"><i class="bi bi-building"></i> Habitaciones</a>
         <a routerLink="/cliente/habitacionesocupadasCliente" routerLinkActive="active" class="nav-link"><i class="bi bi-door-open"></i> Mis Habitaciones Ocupadas</a>
       }

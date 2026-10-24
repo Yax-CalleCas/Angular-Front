@@ -131,33 +131,33 @@ export class CategoriaComponent implements OnInit {
     });
   }
 
-  guardarEstado(): void {
-    this.isProcessingEstado = true;
+ guardarEstado(): void {
+  this.isProcessingEstado = true;
 
-    const id = this.estadoHabitacion.idEstadoHabitacion;
-    const { idEstadoHabitacion, ...sinId } = this.estadoHabitacion;
+  const id = this.estadoHabitacion.idEstadoHabitacion;
+  const { idEstadoHabitacion, ...sinId } = this.estadoHabitacion;
 
-    const operacion$ = id && id > 0
-      ? this.estadoService.actualizar(id, this.estadoHabitacion)
-      : this.estadoService.registrar(sinId as EstadoHabitacionResponseDTO);
+  const operacion$ = id && id > 0
+    ? this.estadoService.actualizar(id, this.estadoHabitacion)
+    : this.estadoService.registrar(sinId);
 
-    operacion$
-      .pipe(
-        finalize(() => {
-          this.isProcessingEstado = false;
-          this.cdr.detectChanges();
-        })
-      )
-      .subscribe({
-        next: () => {
-          Swal.fire('Éxito', 'Estado de habitación guardado correctamente', 'success');
-          this.cargarEstados();
-          this.cerrarModalEstado();
-        },
-        error: (err) =>
-          Swal.fire('Error', err.error?.message || 'Error al guardar estado', 'error')
-      });
-  }
+  operacion$
+    .pipe(
+      finalize(() => {
+        this.isProcessingEstado = false;
+        this.cdr.detectChanges();
+      })
+    )
+    .subscribe({
+      next: () => {
+        Swal.fire('Éxito', 'Estado de habitación guardado correctamente', 'success');
+        this.cargarEstados();
+        this.cerrarModalEstado();
+      },
+      error: (err) =>
+        Swal.fire('Error', err.error?.message || 'Error al guardar estado', 'error')
+    });
+}
 
   eliminarEstado(id?: number): void {
     if (!id) return;

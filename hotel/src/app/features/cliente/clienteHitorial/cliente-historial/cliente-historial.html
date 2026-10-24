@@ -1,0 +1,33 @@
+<div class="container py-4">
+  <h2 class="mb-4">Mi Historial de Alquileres</h2>
+
+  <!-- Indicador de Carga -->
+  <div *ngIf="isLoading()" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2">Cargando historial...</p>
+  </div>
+
+  <!-- Lista de Historial -->
+  <div *ngIf="!isLoading()" class="row">
+    <div *ngFor="let item of historialHabitaciones(); trackBy: trackById" class="col-md-4 mb-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Habitación N°: {{ item.numeroHabitacion || 'N/A' }}</h5>
+          <p class="card-text mb-1"><strong>Entrada:</strong> {{ item.fechaEntrada }}</p>
+          <p class="card-text mb-1"><strong>Salida:</strong> {{ item.fechaSalida }}</p>
+          <p class="card-text mb-2"><strong>Total Pagado:</strong> S/ {{ item.totalPagado | number:'1.2-2' }}</p>
+
+          <!-- Badge de estado -->
+          <span class="badge" [ngClass]="item.fechaSalidaConfirmacion ? 'bg-secondary' : 'bg-success'">
+            {{ item.fechaSalidaConfirmacion ? 'Finalizada' : 'Activa' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje si está vacío -->
+    <div *ngIf="historialHabitaciones().length === 0" class="col-12 text-center py-4">
+      <p class="text-muted">Aún no cuentas con registros en tu historial de habitaciones.</p>
+    </div>
+  </div>
+</div>

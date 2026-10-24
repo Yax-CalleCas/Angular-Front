@@ -13,6 +13,7 @@ export interface LoginResponse {
   tipoPersona: string;
   sedes: Sede[];
   token: string;
+  documento: string;
 }
 
 export interface RegistroClienteDto {

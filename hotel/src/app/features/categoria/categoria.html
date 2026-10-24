@@ -76,6 +76,7 @@
           <thead>
             <tr>
               <th scope="col" class="col-id">ID</th>
+              <th scope="col">Código</th>
               <th scope="col">Descripción</th>
               <th scope="col">Estado</th>
               <th scope="col" class="text-center">Acciones</th>
@@ -85,6 +86,7 @@
             @for (e of estados; track e.idEstadoHabitacion) {
               <tr [class.is-archived]="!e.estado">
                 <td class="cat-id">{{ e.idEstadoHabitacion }}</td>
+                <td><code>{{ e.codigo }}</code></td>
                 <td class="cat-desc">{{ e.descripcion }}</td>
                 <td>
                   <span class="estado-pill" [class.is-ok]="e.estado">
@@ -101,7 +103,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="4" class="cat-state">
+                <td colspan="5" class="cat-state">
                   Aún no hay estados. Usa "Nuevo estado" para crear el primero.
                 </td>
               </tr>
@@ -170,12 +172,18 @@
 
       <form #fe="ngForm" (ngSubmit)="guardarEstado()" novalidate>
         <div class="sy-modal-body">
+          <!-- CORREGIDO: Se agregó el input para el campo 'codigo' requerido por el backend -->
+          <label for="estCodigo" class="sy-label">Código <span class="req">*</span></label>
+          <input id="estCodigo" name="codigo" type="text" class="sy-input" required
+                 placeholder="Ej. DANIADO"
+                 [(ngModel)]="estadoHabitacion.codigo" />
+
           <label for="estDescripcion" class="sy-label">Descripción <span class="req">*</span></label>
           <input id="estDescripcion" name="descripcion" type="text" class="sy-input" required
-                 placeholder="Ej. Disponible, Ocupado, Mantenimiento"
+                 placeholder="Ej. Disponible, Ocupado, Mantenimiento, Dañado"
                  [(ngModel)]="estadoHabitacion.descripcion" />
 
-          @if ((estadoHabitacion.idEstadoHabitacion) > 0) {
+         @if (estadoHabitacion.idEstadoHabitacion > 0) {
             <div class="form-check form-switch sy-switch">
               <input class="form-check-input" type="checkbox" role="switch" id="estadoCheckEst"
                      name="estado" [(ngModel)]="estadoHabitacion.estado" />

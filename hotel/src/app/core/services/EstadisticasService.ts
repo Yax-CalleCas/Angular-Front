@@ -56,7 +56,6 @@ export class EstadisticasService {
         },
 
         onmessage: (msg) => {
-          // Acepta mensajes iniciales, actualizaciones o eventos genéricos
           this.zone.run(() => {
             try {
               if (msg.data) {

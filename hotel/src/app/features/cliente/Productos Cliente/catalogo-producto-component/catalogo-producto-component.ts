@@ -43,16 +43,17 @@ export class CatalogoProductoComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Alineado con el AuthService seguro
     const rawId = this.authService.getUserId();
-    const parsedId = Number(rawId);
+    const parsedId = rawId ? Number(rawId) : NaN;
 
-    this.idPersona = Number.isFinite(parsedId) ? parsedId : 0;
-
-    if (this.idPersona <= 0) {
+    if (!Number.isFinite(parsedId) || parsedId <= 0) {
       Swal.fire('Atención', 'Debes iniciar sesión para ver el catálogo.', 'warning');
       this.router.navigate(['/login']);
       return;
     }
+
+    this.idPersona = parsedId;
 
     this.carritoSub = this.carritoService.carrito$.subscribe(items => {
       this.cantidadCarrito = items.reduce((sum, item) => sum + (item.cantidad ?? 0), 0);

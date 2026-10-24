@@ -49,6 +49,12 @@ export class AdminDashboard {
         this.cargando = false;
         this.errorMensaje = null;
       }),
+      catchError((err) => {
+        console.error('Error en el flujo de estadísticas', err);
+        this.cargando = false;
+        this.errorMensaje = 'No se pudieron cargar las estadísticas.';
+        return EMPTY;
+      }),
       shareReplay({ bufferSize: 1, refCount: true })
     );
   }
